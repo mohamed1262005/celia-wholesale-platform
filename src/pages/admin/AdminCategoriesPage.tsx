@@ -183,6 +183,8 @@ export function AdminCategoriesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCategories.map((category) => {
             const catName = lang === 'ar' ? (category.name_ar || category.name) : (category.name_en || category.name);
+            // التحقق من وجود صورة للتصنيف سواء كانت في حقل image أو image_url
+            const categoryImage = category.image || category.image_url;
 
             return (
               <div
@@ -192,9 +194,20 @@ export function AdminCategoriesPage() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-primary-50 flex items-center justify-center font-bold shadow-inner">
-                      {getCategoryIcon(catName)}
-                    </div>
+                    {/* عرض الصورة إذا وجدت، أو الأيقونة الاحترافية كبديل */}
+                    {categoryImage ? (
+                      <div className="w-14 h-14 rounded-2xl overflow-hidden border border-gray-100 shadow-inner flex-shrink-0 bg-gray-50">
+                        <img 
+                          src={categoryImage} 
+                          alt={catName} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded-2xl bg-primary-50 flex items-center justify-center font-bold shadow-inner flex-shrink-0">
+                        {getCategoryIcon(catName)}
+                      </div>
+                    )}
                     <div>
                       <h3 className="font-bold text-gray-900 text-base">{catName}</h3>
                       <div className="mt-1.5">

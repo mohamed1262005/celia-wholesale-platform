@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
-import { slugify } from '@/lib/pricing';
 import { Button } from '@/components/ui/Button';
-import { FolderTree, ArrowRight } from 'lucide-react';
+import { FolderTree, ArrowRight, Upload, X, Image as ImageIcon } from 'lucide-react';
 
 export function AdminCategoryFormPage() {
   const { lang } = useLanguage();
@@ -16,11 +15,12 @@ export function AdminCategoryFormPage() {
 
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [formData, setFormData] = useState({
     name_ar: '',
     name_en: '',
-    slug: '',
+    image: '',
   });
 
   useEffect(() => {
@@ -38,21 +38,43 @@ export function AdminCategoryFormPage() {
       setFormData({
         name_ar: data.name_ar || data.name || '',
         name_en: data.name_en || '',
-        slug: data.slug || '',
+        image: data.image || data.image_url || '',
       });
     }
     setLoading(false);
   };
 
-  const handleNameChange = (field: 'name_ar' | 'name_en', value: string) => {
-    setFormData((prev) => {
-      const next = { ...prev, [field]: value };
-      const shouldAutoSlug = !prev.slug || prev.slug === slugify(prev.name_en || prev.name_ar);
-      if (shouldAutoSlug) {
-        next.slug = slugify(next.name_en || next.name_ar);
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    setUploadingImage(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+      const filePath = `categories/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('products')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
       }
-      return next;
-    });
+
+      const { data: publicURLData } = supabase.storage
+        .from('products')
+        .getPublicUrl(filePath);
+
+      setFormData((prev) => ({ ...prev, image: publicURLData.publicUrl }));
+      showToast(lang === 'ar' ? 'تم رفع الصورة بنجاح' : 'Image uploaded successfully', 'success');
+    } catch (error: any) {
+      showToast(error.message || 'حدث خطأ أثناء رفع الصورة', 'error');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -62,7 +84,8 @@ export function AdminCategoryFormPage() {
     const payload = {
       name_ar: formData.name_ar,
       name_en: formData.name_en || formData.name_ar,
-      slug: formData.slug || slugify(formData.name_en || formData.name_ar),
+      image: formData.image,
+      image_url: formData.image,
     };
 
     let error;
@@ -101,9 +124,10 @@ export function AdminCategoryFormPage() {
             <FolderTree className="w-6 h-6 text-primary-500" />
             <span>{isEditing ? (lang === 'ar' ? 'تعديل التصنيف' : 'Edit Category') : (lang === 'ar' ? 'إضافة تصنيف جديد' : 'Add New Category')}</span>
           </h1>
-          <p className="text-xs text-gray-500 mt-1">أدخل اسم التصنيف بالعربية والإنجليزية ليظهر في المتجر</p>
+          <p className="text-xs text-gray-500 mt-1">أدخل اسم التصنيف وارفع صورته ليظهر في المتجر بشكل احترافي</p>
         </div>
         <button
+          type="button"
           onClick={() => navigate('/admin/categories')}
           className="inline-flex items-center gap-2 text-xs font-bold text-gray-600 hover:text-primary-600 bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl border border-gray-200 transition-all cursor-pointer"
         >
@@ -120,7 +144,7 @@ export function AdminCategoryFormPage() {
               type="text"
               required
               value={formData.name_ar}
-              onChange={(e) => handleNameChange('name_ar', e.target.value)}
+              onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
               placeholder="مثال: حلويات وشوكولاتة"
               className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
             />
@@ -131,22 +155,48 @@ export function AdminCategoryFormPage() {
             <input
               type="text"
               value={formData.name_en}
-              onChange={(e) => handleNameChange('name_en', e.target.value)}
+              onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
               placeholder="Example: Sweets & Chocolate"
               className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
             />
           </div>
 
+          {/* حقل رفع صورة التصنيف مع المعاينة */}
           <div className="md:col-span-2">
-            <label className="block text-xs font-bold text-gray-700 mb-2">الرابط المختصر (Slug)</label>
-            <input
-              type="text"
-              value={formData.slug}
-              onChange={(e) => setFormData({ ...formData, slug: slugify(e.target.value) })}
-              placeholder="sweets-chocolate"
-              className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium font-mono"
-            />
-            <p className="text-xs text-gray-400 mt-1.5">بيتولّد تلقائيًا من الاسم، وتقدر تعدّله يدويًا لو حابب</p>
+            <label className="block text-xs font-bold text-gray-700 mb-2">صورة التصنيف</label>
+            <div className="flex items-center gap-4">
+              {formData.image ? (
+                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border border-gray-200 shadow-sm flex-shrink-0 bg-gray-50">
+                  <img src={formData.image} alt="Category Preview" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, image: '' })}
+                    className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full hover:bg-red-700 transition-all shadow-md cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-20 h-20 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 flex-shrink-0">
+                  <ImageIcon className="w-8 h-8" />
+                </div>
+              )}
+
+              <div className="flex-1">
+                <label className="cursor-pointer inline-flex items-center gap-2 px-5 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-2xl text-xs font-bold transition-all shadow-2xs">
+                  <Upload className="w-4 h-4 text-primary-500" />
+                  <span>{uploadingImage ? 'جاري رفع الصورة...' : 'اختر صورة التصنيف'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploadingImage}
+                    className="hidden"
+                  />
+                </label>
+                <p className="text-xs text-gray-400 mt-2">يفضل أن تكون الصورة مربعة وبجودة عالية (PNG, JPG)</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -158,7 +208,7 @@ export function AdminCategoryFormPage() {
           >
             إلغاء
           </button>
-          <Button type="submit" disabled={submitting} className="px-8 py-3 rounded-2xl font-extrabold shadow-lg shadow-primary-500/25">
+          <Button type="submit" disabled={submitting || uploadingImage} className="px-8 py-3 rounded-2xl font-extrabold shadow-lg shadow-primary-500/25">
             {submitting ? 'جاري الحفظ...' : isEditing ? 'تعديل التصنيف' : 'حفظ وإضافة التصنيف'}
           </Button>
         </div>
