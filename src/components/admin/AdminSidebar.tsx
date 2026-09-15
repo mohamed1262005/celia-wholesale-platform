@@ -5,7 +5,7 @@ import { Logo } from '@/components/Logo';
 import { supabase } from '@/lib/supabase';
 import {
   LayoutDashboard, Package, FolderTree, Boxes, Tag, Users,
-  BarChart3, Bell, ShoppingCart, LogOut, Layers
+  BarChart3, Bell, ShoppingCart, LogOut, Layers, X
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -41,7 +41,7 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
   };
 
   return (
-    <div className="flex flex-col h-full w-64 bg-white border-e border-gray-100">
+    <div className="flex flex-col h-full w-64 bg-white border-e border-gray-100 shadow-lg md:shadow-none">
       <div className="px-5 py-5 border-b border-gray-100 flex items-center justify-between">
         <div>
           <Logo size="md" />
@@ -50,6 +50,15 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
             {t('dashboard')}
           </div>
         </div>
+        {/* زر إغلاق يظهر على الموبايل فقط لو فيه دالة onClose */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="md:hidden p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
