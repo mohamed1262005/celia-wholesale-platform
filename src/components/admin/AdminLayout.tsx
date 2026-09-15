@@ -4,13 +4,14 @@ import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabase';
-import { Bell, CheckCircle, AlertTriangle, Sparkles } from 'lucide-react';
+import { Bell, CheckCircle, AlertTriangle, Sparkles, Menu, X } from 'lucide-react';
 
 export function AdminLayout() {
   const { lang } = useLanguage();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // جلب الإشعارات وتفعيل الاستماع اللحظي Realtime
   useEffect(() => {
@@ -67,22 +68,51 @@ export function AdminLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-slate-50/50 to-primary-50/20 overflow-hidden">
-      {/* Sidebar ثابت لا يسبب قص للمحتوى */}
-      <AdminSidebar />
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-slate-50/50 to-primary-50/20 overflow-hidden relative">
+      
+      {/* Sidebar للشاشات الكبيرة (لاب وتبرت) */}
+      <div className="hidden md:block h-full">
+        <AdminSidebar />
+      </div>
 
-      {/* حاوية المحتوى الرئيسي مع إتاحة الـ Scroll الكامل */}
+      {/* Sidebar للموبايل (Drawer منبثق مع خلفية مظلمة) */}
+      {isMobileSidebarOpen && (
+        <div className="fixed inset-0 z-50 flex md:hidden">
+          {/* خلفية شفافة تغطي الشاشة عند الفتح */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+          {/* محتوى السايدبار */}
+          <div className="relative w-64 h-full bg-white shadow-2xl z-10 flex flex-col">
+            <AdminSidebar onClose={() => setIsMobileSidebarOpen(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* حاوية المحتوى الرئيسي */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         
         {/* Header بتأثير زجاجي العصري Glassmorphism */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-6 py-3.5 flex items-center justify-between shadow-xs">
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-xs">
           
-          {/* لمسة AI ذكية تعطي الطابع الاحترافي للوحة التحكم */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-primary-500/10 to-secondary-500/10 border border-primary-500/20">
-            <Sparkles className="w-4 h-4 text-primary-600 animate-spin-slow" />
-            <span className="text-xs font-bold text-primary-700">
-              {lang === 'ar' ? 'نظام الإدارة الذكي (AI Powered)' : 'AI Management System'}
-            </span>
+          <div className="flex items-center gap-3">
+            {/* زر القائمة للموبايل */}
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="md:hidden p-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              aria-label="Open Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            {/* لمسة AI ذكية تعطي الطابع الاحترافي لوحة التحكم */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-primary-500/10 to-secondary-500/10 border border-primary-500/20">
+              <Sparkles className="w-4 h-4 text-primary-600 animate-spin-slow" />
+              <span className="text-xs font-bold text-primary-700">
+                {lang === 'ar' ? 'نظام الإدارة الذكي (AI Powered)' : 'AI Management System'}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-4 ms-auto">
@@ -165,8 +195,8 @@ export function AdminLayout() {
           </div>
         </header>
 
-        {/* مساحة المحتوى الأساسي مع هوامش وتصميم مريح للنظر */}
-        <main className="flex-1 p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+        {/* مساحة المحتوى الأساسي */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
           <Outlet />
         </main>
       </div>
