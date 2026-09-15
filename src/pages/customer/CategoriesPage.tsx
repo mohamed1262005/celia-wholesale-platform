@@ -17,24 +17,32 @@ export function CategoriesPage() {
 
     async function fetchCounts() {
       try {
-        const updated = await Promise.all(
-          categories.map(async (cat) => {
-            const { count, error } = await supabase
-              .from('products')
-              .select('*', { count: 'exact', head: true })
-              .eq('category_id', cat.id)
-              .eq('status', 'active');
+        // طلب واحد بيرجع كل الـ counts مع بعض بدل ما نعمل query لكل category
+        const { data, error } = await supabase.rpc('get_category_product_counts');
 
-            if (error) throw error;
-            return { ...cat, product_count: count || 0 };
-          })
+        if (error) throw error;
+
+        const countMap = new Map<string, number>(
+          (data || []).map((row: { category_id: string; product_count: number }) => [
+            row.category_id,
+            row.product_count,
+          ])
         );
 
         if (isMounted) {
-          setCategoriesWithCounts(updated);
+          setCategoriesWithCounts(
+            categories.map((cat) => ({
+              ...cat,
+              product_count: countMap.get(cat.id) || 0,
+            }))
+          );
         }
       } catch (err) {
         console.error('Error fetching category counts:', err);
+        // في حالة فشل الـ RPC، على الأقل نعرض التصنيفات من غير counts بدل ما الصفحة تفضل فاضية
+        if (isMounted) {
+          setCategoriesWithCounts(categories.map((cat) => ({ ...cat, product_count: 0 })));
+        }
       }
     }
 
@@ -43,7 +51,7 @@ export function CategoriesPage() {
     return () => {
       isMounted = false;
     };
-  }, [categories.length]);
+  }, [categories]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">

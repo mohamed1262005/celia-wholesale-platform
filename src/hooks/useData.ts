@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { getAvailableStock } from '@/lib/pricing';
 import type { Category, Product, Order, AppNotification } from '@/types';
 
 export function useCategories() {
@@ -57,10 +58,15 @@ export function useProducts(filters?: {
     setLoading(true);
     setError(null);
 
-    // جلب المنتجات وحدها لضمان عدم حدوث أي خطأ 400
+    // طلب واحد بيجيب المنتجات + التصنيف + شرائح الأسعار مع بعض (join)
+    // بدل ما نعمل 2 query منفصلين لكل منتج داخل loop
     let query = supabase
       .from('products')
-      .select('*');
+      .select(`
+        *,
+        categories (*),
+        pricing_tiers (*)
+      `);
 
     if (filters?.sort === 'name') {
       query = query.order('name_ar', { ascending: true });
@@ -76,31 +82,6 @@ export function useProducts(filters?: {
     } else {
       let result = (data as Product[]) || [];
 
-      // جلب التصنيفات وشرائح الأسعار لكل منتج بشكل آمن ومنفصل
-      for (const product of result) {
-        // جلب التصنيف لو موجود category_id
-        if (product.category_id) {
-          const { data: catData } = await supabase
-            .from('categories')
-            .select('*')
-            .eq('id', product.category_id)
-            .maybeSingle();
-          if (catData) {
-            (product as any).categories = catData;
-          }
-        }
-
-        // جلب شرائح الأسعار
-        const { data: tiers } = await supabase
-          .from('pricing_tiers')
-          .select('*')
-          .eq('product_id', product.id);
-        
-        if (tiers) {
-          product.pricing_tiers = tiers;
-        }
-      }
-
       // تصفية حسب التصنيف لو محدد
       if (filters?.categorySlug) {
         result = result.filter((p: any) => p.categories?.slug === filters.categorySlug);
@@ -115,12 +96,10 @@ export function useProducts(filters?: {
         );
       }
 
-      // تصفية المنتجات المتوفرة في المخزن
+      // تصفية المنتجات المتوفرة في المخزن — بنفس منطق getAvailableStock
+      // المستخدم في باقي المنصة (stock_quantity - reserved_quantity)
       if (filters?.availability === 'available') {
-        result = result.filter((p: any) => {
-          const stockVal = Number(p.stock ?? p.stock_quantity ?? 0);
-          return stockVal > 0;
-        });
+        result = result.filter((p) => getAvailableStock(p) > 0);
       }
 
       setProducts(result);
@@ -144,37 +123,23 @@ export function useProduct(id: string | undefined) {
     }
     (async () => {
       setLoading(true);
+      setError(null);
+
+      // نفس المبدأ: طلب واحد بيجيب المنتج + التصنيف + شرائح الأسعار مع بعض
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          categories (*),
+          pricing_tiers (*)
+        `)
         .eq('id', id)
         .maybeSingle();
 
       if (error) {
         setError(error.message);
       } else if (data) {
-        const prod = data as Product;
-        
-        if (prod.category_id) {
-          const { data: catData } = await supabase
-            .from('categories')
-            .select('*')
-            .eq('id', prod.category_id)
-            .maybeSingle();
-          if (catData) {
-            (prod as any).categories = catData;
-          }
-        }
-
-        const { data: tiers } = await supabase
-          .from('pricing_tiers')
-          .select('*')
-          .eq('product_id', prod.id);
-        
-        if (tiers) {
-          prod.pricing_tiers = tiers;
-        }
-        setProduct(prod);
+        setProduct(data as Product);
       }
       setLoading(false);
     })();

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
@@ -8,6 +8,7 @@ import { Plus, Search, Edit, Trash2, FolderTree, Layers, CheckCircle, Coffee, Co
 export function AdminCategoriesPage() {
   const { t, lang } = useLanguage();
   const { showToast } = useToast();
+  const navigate = useNavigate();
 
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,20 +20,50 @@ export function AdminCategoriesPage() {
 
   const fetchCategories = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data: cats, error } = await supabase
       .from('categories')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('name_ar', { ascending: true });
 
     if (error) {
       showToast(error.message, 'error');
-    } else {
-      setCategories(data || []);
+      setLoading(false);
+      return;
     }
+
+    // جلب عدد المنتجات لكل تصنيف
+    const categoriesWithCount = await Promise.all(
+      (cats || []).map(async (cat) => {
+        const { count, error: countErr } = await supabase
+          .from('products')
+          .select('*', { count: 'exact', head: true })
+          .eq('category_id', cat.id);
+
+        return {
+          ...cat,
+          product_count: countErr ? 0 : (count || 0),
+        };
+      })
+    );
+
+    setCategories(categoriesWithCount);
     setLoading(false);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+
+    const targetCat = categories.find((c) => c.id === id);
+    if (targetCat && targetCat.product_count > 0) {
+      showToast(
+        lang === 'ar'
+          ? `لا يمكن حذف هذا التصنيف لأنه مرتبط بـ ${targetCat.product_count} منتج. قم بنقل أو حذف هذه المنتجات أولاً`
+          : `Cannot delete: ${targetCat.product_count} product(s) are linked to this category. Move or delete them first`,
+        'error'
+      );
+      return;
+    }
+
     if (!window.confirm(lang === 'ar' ? 'هل أنت متأكد من حذف هذا التصنيف؟' : 'Are you sure you want to delete this category?')) {
       return;
     }
@@ -46,7 +77,6 @@ export function AdminCategoriesPage() {
     }
   };
 
-  // دالة ذكية لتحديد أيقونة مناسبة لكل صنف بناءً على اسمه
   const getCategoryIcon = (name: string) => {
     const n = (name || '').toLowerCase();
     if (n.includes('مشروب') || n.includes('drink') || n.includes('عصير')) {
@@ -157,7 +187,8 @@ export function AdminCategoriesPage() {
             return (
               <div
                 key={category.id}
-                className="bg-white rounded-2xl border border-gray-100 shadow-card p-6 flex flex-col justify-between transition-all duration-300 hover:scale-[1.02] hover:shadow-xl group"
+                onClick={() => navigate(`/admin/products?category=${category.id}`)}
+                className="bg-white rounded-2xl border border-gray-100 shadow-card p-6 flex flex-col justify-between transition-all duration-300 hover:scale-[1.02] hover:shadow-xl group cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
@@ -166,7 +197,12 @@ export function AdminCategoriesPage() {
                     </div>
                     <div>
                       <h3 className="font-bold text-gray-900 text-base">{catName}</h3>
-                      <p className="text-xs text-gray-400 mt-0.5 font-mono">ID: {category.id.slice(0, 8)}...</p>
+                      <div className="mt-1.5">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-600">
+                          <Package className="w-3.5 h-3.5" />
+                          {category.product_count} {lang === 'ar' ? 'منتج' : 'products'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -175,14 +211,15 @@ export function AdminCategoriesPage() {
                 <div className="grid grid-cols-2 gap-2 border-t border-gray-50 pt-4 mt-4">
                   <Link
                     to={`/admin/categories/${category.id}/edit`}
+                    onClick={(e) => e.stopPropagation()}
                     className="py-2.5 bg-primary-50 hover:bg-primary-500 text-primary-600 hover:text-white rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 shadow-2xs"
                   >
                     <Edit className="w-3.5 h-3.5" />
                     <span>تعديل</span>
                   </Link>
                   <button
-                    onClick={() => handleDelete(category.id)}
-                    className="py-2.5 bg-red-50 hover:bg-red-500 text-red-600 hover:text-white rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 shadow-2xs"
+                    onClick={(e) => handleDelete(e, category.id)}
+                    className="py-2.5 bg-red-50 hover:bg-red-500 text-red-600 hover:text-white rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>حذف</span>

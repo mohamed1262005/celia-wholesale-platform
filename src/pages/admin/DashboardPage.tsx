@@ -172,89 +172,89 @@ export function DashboardPage() {
   const totalForChart = Object.values(statusCounts).reduce((a, b) => a + b, 0) || 1;
 
   return (
-    <div className="space-y-6 pb-28 max-w-7xl mx-auto px-6">
+    <div className="space-y-4 sm:space-y-6 pb-28 max-w-7xl mx-auto px-3 sm:px-6">
       {/* 1. رأس لوحة التحكم */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Celia Premium Sweets</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Celia Premium Sweets</h1>
           <p className="text-xs text-gray-500 mt-1">{t('adminDashboard')}</p>
         </div>
         <div className="flex items-center gap-3 bg-gray-50 px-4 py-2.5 rounded-xl border border-gray-100">
-          <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-sm">
+          <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-sm flex-shrink-0">
             {profile?.full_name?.[0] || 'ط'}
           </div>
-          <div>
-            <p className="text-sm font-bold text-gray-900">{profile?.full_name || 'طارق'}</p>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-gray-900 truncate">{profile?.full_name || 'طارق'}</p>
             <p className="text-xs text-gray-400">مدير النظام</p>
           </div>
         </div>
       </div>
 
       {/* 2. الكروت الأربعة الرئيسية (KPIs) - ألوان مخصصة ومطابقة للصورة مع تفاعل حي */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* كارت إجمالي الطلبات */}
-        <div className="rounded-2xl border border-pink-200 shadow-xs p-5 flex items-center justify-between bg-gradient-to-br from-pink-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
-          <div>
-            <p className="text-xs text-gray-500 font-medium">{t('totalOrders')}</p>
-            <h3 className="text-2xl font-bold text-gray-900 mt-1">{stats.totalOrders}</h3>
-            <span className="text-xs text-emerald-600 font-semibold mt-1 inline-block">25% عن الشهر الماضي</span>
+        <div className="rounded-2xl border border-pink-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-pink-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">{t('totalOrders')}</p>
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{stats.totalOrders}</h3>
+            <span className="text-[10px] sm:text-xs text-emerald-600 font-semibold mt-1 inline-block">25% عن الشهر الماضي</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-[#FF6FA5] text-white flex items-center justify-center shadow-md shadow-pink-500/20">
-            <ShoppingCart className="w-6 h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-[#FF6FA5] text-white flex items-center justify-center shadow-md shadow-pink-500/20 flex-shrink-0">
+            <ShoppingCart className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* كارت إجمالي العملاء */}
-        <div className="rounded-2xl border border-teal-200 shadow-xs p-5 flex items-center justify-between bg-gradient-to-br from-teal-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
-          <div>
-            <p className="text-xs text-gray-500 font-medium">{t('totalCustomers')}</p>
-            <h3 className="text-2xl font-bold text-gray-900 mt-1">{stats.totalCustomers}</h3>
-            <span className="text-xs text-emerald-600 font-semibold mt-1 inline-block">18% عن الشهر الماضي</span>
+        <div className="rounded-2xl border border-teal-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-teal-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">{t('totalCustomers')}</p>
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{stats.totalCustomers}</h3>
+            <span className="text-[10px] sm:text-xs text-emerald-600 font-semibold mt-1 inline-block">18% عن الشهر الماضي</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-[#00C7B7] text-white flex items-center justify-center shadow-md shadow-teal-500/20">
-            <Users className="w-6 h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-[#00C7B7] text-white flex items-center justify-center shadow-md shadow-teal-500/20 flex-shrink-0">
+            <Users className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* كارت إجمالي المبيعات */}
-        <div className="rounded-2xl border border-amber-200 shadow-xs p-5 flex items-center justify-between bg-gradient-to-br from-amber-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
-          <div>
-            <p className="text-xs text-gray-500 font-medium">{t('totalSales')}</p>
-            <h3 className="text-xl font-bold text-gray-900 mt-1 font-mono">{formatPrice(stats.totalSales, t('currency'))}</h3>
-            <span className="text-xs text-emerald-600 font-semibold mt-1 inline-block">30% عن الشهر الماضي</span>
+        <div className="rounded-2xl border border-amber-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-amber-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">{t('totalSales')}</p>
+            <h3 className="text-sm sm:text-xl font-bold text-gray-900 mt-1 font-mono truncate">{formatPrice(stats.totalSales, t('currency'))}</h3>
+            <span className="text-[10px] sm:text-xs text-emerald-600 font-semibold mt-1 inline-block">30% عن الشهر الماضي</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20">
-            <DollarSign className="w-6 h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 flex-shrink-0">
+            <DollarSign className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* كارت إجمالي المنتجات */}
-        <div className="rounded-2xl border border-purple-200 shadow-xs p-5 flex items-center justify-between bg-gradient-to-br from-purple-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
-          <div>
-            <p className="text-xs text-gray-500 font-medium">{t('totalProducts')}</p>
-            <h3 className="text-2xl font-bold text-gray-900 mt-1">{stats.totalProducts}</h3>
-            <span className="text-xs text-purple-600 font-semibold mt-1 inline-block">متوفر متاح</span>
+        <div className="rounded-2xl border border-purple-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-purple-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">{t('totalProducts')}</p>
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{stats.totalProducts}</h3>
+            <span className="text-[10px] sm:text-xs text-purple-600 font-semibold mt-1 inline-block">متوفر متاح</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/20">
-            <Package className="w-6 h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/20 flex-shrink-0">
+            <Package className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
       </div>
 
       {/* 3. صف الرسوم البيانية: خط المبيعات + دائرة توزيع الحالات */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
         {/* خط بياني حقيقي لمبيعات آخر 7 أيام */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-xs p-6">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-xs p-4 sm:p-6">
           <h2 className="font-bold text-gray-900 text-sm flex items-center gap-2 mb-4">
-            <Calendar className="w-4 h-4 text-primary-500" />
-            {lang === 'ar' ? 'مبيعات خلال آخر أيام' : 'Sales — last 7 days'}
+            <Calendar className="w-4 h-4 text-primary-500 flex-shrink-0" />
+            <span>{lang === 'ar' ? 'مبيعات خلال آخر أيام' : 'Sales — last 7 days'}</span>
           </h2>
-          <div className="h-64">
+          <div className="h-56 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dailySales} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: '#9CA3AF' }} axisLine={false} tickLine={false} width={40} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} width={36} />
                 <Tooltip
                   formatter={(value: number) => formatPrice(value, t('currency'))}
                   contentStyle={{ borderRadius: 12, border: '1px solid #F1F5F9', fontSize: 12 }}
@@ -266,10 +266,10 @@ export function DashboardPage() {
         </div>
 
         {/* دائرة (Donut) توزيع الطلبات حسب الحالة */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-4 sm:p-6">
           <h2 className="font-bold text-gray-900 text-sm mb-4">{t('orderStatusDistribution')}</h2>
 
-          <div className="relative h-44">
+          <div className="relative h-40 sm:h-44">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={pieData} dataKey="value" nameKey="status" innerRadius={50} outerRadius={70} paddingAngle={2} stroke="none">
@@ -290,12 +290,12 @@ export function DashboardPage() {
               const count = statusCounts[status] || 0;
               const pct = Math.round((count / totalForChart) * 100);
               return (
-                <div key={status} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: STATUS_COLORS[status] }} />
-                    <span className="text-gray-600 font-medium">{t(status as any)}</span>
+                <div key={status} className="flex items-center justify-between text-xs gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: STATUS_COLORS[status] }} />
+                    <span className="text-gray-600 font-medium truncate">{t(status as any)}</span>
                   </div>
-                  <span className="text-gray-900 font-mono font-bold">
+                  <span className="text-gray-900 font-mono font-bold flex-shrink-0">
                     {count} ({pct}%)
                   </span>
                 </div>
@@ -306,12 +306,12 @@ export function DashboardPage() {
       </div>
 
       {/* 4. أحدث الطلبات + أفضل المنتجات مبيعاً */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
         {/* جدول أحدث الطلبات */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-xs p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-xs p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-4 gap-2">
             <h2 className="font-bold text-gray-900 text-sm">{t('recentOrders')}</h2>
-            <Link to="/admin/orders" className="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">
+            <Link to="/admin/orders" className="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
               {t('viewAll')} <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
             </Link>
           </div>
@@ -319,8 +319,8 @@ export function DashboardPage() {
           {recentOrders.length === 0 ? (
             <p className="text-xs text-gray-400 text-center py-8">{t('noOrders')}</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-right text-xs">
+            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full text-right text-xs min-w-[600px] sm:min-w-0">
                 <thead>
                   <tr className="border-b border-gray-100 text-gray-400 font-semibold">
                     <th className="pb-3 px-3">رقم الطلب</th>
@@ -355,10 +355,10 @@ export function DashboardPage() {
         </div>
 
         {/* أفضل المنتجات مبيعاً */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-4 sm:p-6">
           <h2 className="font-bold text-gray-900 text-sm mb-4 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-primary-500" />
-            {t('topProducts')}
+            <TrendingUp className="w-4 h-4 text-primary-500 flex-shrink-0" />
+            <span>{t('topProducts')}</span>
           </h2>
           {topProducts.length === 0 ? (
             <p className="text-xs text-gray-400 text-center py-8">{t('noData')}</p>
@@ -366,7 +366,7 @@ export function DashboardPage() {
             <div className="space-y-3">
               {topProducts.map((product, idx) => (
                 <div key={idx} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                  <span className="text-xs text-gray-300 w-4 font-bold">{idx + 1}</span>
+                  <span className="text-xs text-gray-300 w-4 font-bold flex-shrink-0">{idx + 1}</span>
                   <div className="w-10 h-10 rounded-lg bg-gray-50 overflow-hidden flex-shrink-0 border border-gray-200 flex items-center justify-center">
                     {product.image ? (
                       <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
@@ -377,7 +377,7 @@ export function DashboardPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-gray-900 truncate font-semibold">{product.name}</p>
                   </div>
-                  <span className="text-xs text-primary-600 font-mono whitespace-nowrap font-bold">
+                  <span className="text-xs text-primary-600 font-mono whitespace-nowrap font-bold flex-shrink-0">
                     {product.qty} {t('units')}
                   </span>
                 </div>

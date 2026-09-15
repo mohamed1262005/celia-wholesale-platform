@@ -30,7 +30,9 @@ import { ForgotPasswordPage } from '@/pages/customer/ForgotPasswordPage';
 import { DashboardPage } from '@/pages/admin/DashboardPage';
 import { AdminOrdersPage } from '@/pages/admin/AdminOrdersPage';
 import { AdminProductsPage } from '@/pages/admin/AdminProductsPage';
+import AdminProductFormPage from '@/pages/admin/AdminProductFormPage';
 import { AdminCategoriesPage } from '@/pages/admin/AdminCategoriesPage';
+import AdminCategoryFormPage from '@/pages/admin/AdminCategoryFormPage';
 import { AdminInventoryPage } from '@/pages/admin/AdminInventoryPage';
 import { AdminPricingPage } from '@/pages/admin/AdminPricingPage';
 import { AdminCustomersPage } from '@/pages/admin/AdminCustomersPage';
@@ -94,7 +96,11 @@ function AppRoutes() {
           <Route index element={<DashboardPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
           <Route path="products" element={<AdminProductsPage />} />
+          <Route path="products/new" element={<AdminProductFormPage />} />
+          <Route path="products/:id/edit" element={<AdminProductFormPage />} />
           <Route path="categories" element={<AdminCategoriesPage />} />
+          <Route path="categories/new" element={<AdminCategoryFormPage />} />
+          <Route path="categories/:id/edit" element={<AdminCategoryFormPage />} />
           <Route path="inventory" element={<AdminInventoryPage />} />
           <Route path="pricing" element={<AdminPricingPage />} />
           <Route path="customers" element={<AdminCustomersPage />} />

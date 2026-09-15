@@ -101,19 +101,19 @@ export function AdminProductFormPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8 pb-24 space-y-6">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-24 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between bg-gradient-to-r from-pink-50/60 via-purple-50/40 to-white rounded-3xl border border-pink-100/60 p-6 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-r from-pink-50/60 via-purple-50/40 to-white rounded-3xl border border-pink-100/60 p-4 sm:p-6 shadow-sm">
         <div>
-          <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-            <Package className="w-6 h-6 text-primary-500" />
+          <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+            <Package className="w-5 h-5 sm:w-6 sm:h-6 text-primary-500" />
             <span>{isEditing ? (lang === 'ar' ? 'تعديل المنتج' : 'Edit Product') : (lang === 'ar' ? 'إضافة منتج جديد' : 'Add New Product')}</span>
           </h1>
           <p className="text-xs text-gray-500 mt-1">أدخل تفاصيل المنتج بدقة لتظهر في المتجر ولدى العملاء</p>
         </div>
         <button
           onClick={() => navigate('/admin/products')}
-          className="inline-flex items-center gap-2 text-xs font-bold text-gray-600 hover:text-primary-600 bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl border border-gray-200 transition-all cursor-pointer"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-xs font-bold text-gray-600 hover:text-primary-600 bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl border border-gray-200 transition-all cursor-pointer"
         >
           <ArrowRight className="w-4 h-4 rtl:rotate-180" />
           <span>رجوع للمنتجات</span>
@@ -121,8 +121,8 @@ export function AdminProductFormPage() {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-gray-100 shadow-card p-8 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-gray-100 shadow-card p-4 sm:p-8 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {/* Arabic Name */}
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-2">اسم المنتج بالعربية *</label>
@@ -209,16 +209,16 @@ export function AdminProductFormPage() {
         {/* Image URL */}
         <div>
           <label className="block text-xs font-bold text-gray-700 mb-2">رابط صورة المنتج (Image URL)</label>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="url"
               value={formData.image_url}
               onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
               placeholder="https://images.pexels.com/..."
-              className="flex-1 px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
+              className="flex-1 w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
             />
             {formData.image_url && (
-              <div className="w-12 h-12 rounded-2xl overflow-hidden border border-gray-200 flex-shrink-0 bg-gray-50">
+              <div className="w-12 h-12 rounded-2xl overflow-hidden border border-gray-200 flex-shrink-0 bg-gray-50 self-start sm:self-auto">
                 <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
               </div>
             )}
@@ -226,15 +226,15 @@ export function AdminProductFormPage() {
         </div>
 
         {/* Submit Button */}
-        <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
+        <div className="pt-4 border-t border-gray-100 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
           <button
             type="button"
             onClick={() => navigate('/admin/products')}
-            className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl text-xs font-bold transition-all cursor-pointer"
+            className="w-full sm:w-auto px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl text-xs font-bold transition-all cursor-pointer"
           >
             إلغاء
           </button>
-          <Button type="submit" disabled={submitting} className="px-8 py-3 rounded-2xl font-extrabold shadow-lg shadow-primary-500/25">
+          <Button type="submit" disabled={submitting} className="w-full sm:w-auto px-8 py-3 rounded-2xl font-extrabold shadow-lg shadow-primary-500/25">
             {submitting ? 'جاري الحفظ...' : isEditing ? 'تعديل المنتج' : 'حفظ وإضافة المنتج'}
           </Button>
         </div>
