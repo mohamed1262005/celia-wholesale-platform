@@ -12,21 +12,38 @@ export function CategoriesPage() {
   const [categoriesWithCounts, setCategoriesWithCounts] = useState<Category[]>([]);
 
   useEffect(() => {
-    if (categories.length === 0) return;
-    (async () => {
-      const updated = await Promise.all(
-        categories.map(async cat => {
-          const { count } = await supabase
-            .from('products')
-            .select('*', { count: 'exact', head: true })
-            .eq('category_id', cat.id)
-            .eq('status', 'active');
-          return { ...cat, product_count: count || 0 };
-        })
-      );
-      setCategoriesWithCounts(updated);
-    })();
-  }, [categories]);
+    let isMounted = true;
+    if (!categories || categories.length === 0) return;
+
+    async function fetchCounts() {
+      try {
+        const updated = await Promise.all(
+          categories.map(async (cat) => {
+            const { count, error } = await supabase
+              .from('products')
+              .select('*', { count: 'exact', head: true })
+              .eq('category_id', cat.id)
+              .eq('status', 'active');
+
+            if (error) throw error;
+            return { ...cat, product_count: count || 0 };
+          })
+        );
+
+        if (isMounted) {
+          setCategoriesWithCounts(updated);
+        }
+      } catch (err) {
+        console.error('Error fetching category counts:', err);
+      }
+    }
+
+    fetchCounts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [categories.length]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
@@ -37,13 +54,15 @@ export function CategoriesPage() {
 
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => <CategoryCardSkeleton key={i} />)}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <CategoryCardSkeleton key={i} />
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {categoriesWithCounts.length > 0
-            ? categoriesWithCounts.map(cat => <CategoryCard key={cat.id} category={cat} />)
-            : categories.map(cat => <CategoryCard key={cat.id} category={cat} />)}
+            ? categoriesWithCounts.map((cat) => <CategoryCard key={cat.id} category={cat} />)
+            : categories.map((cat) => <CategoryCard key={cat.id} category={cat} />)}
         </div>
       )}
     </div>

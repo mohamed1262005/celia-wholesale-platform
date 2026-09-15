@@ -63,20 +63,20 @@ export function Navbar() {
   return (
     <>
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 gap-4">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-16 gap-2 sm:gap-4 flex-wrap">
             {/* Logo */}
             <div className="flex-shrink-0">
               <Logo />
             </div>
 
-            {/* Desktop nav */}
-            <nav className="hidden lg:flex items-center gap-1">
+            {/* Desktop & Mobile visible nav */}
+            <nav className="flex items-center gap-1 overflow-x-auto max-w-full">
               {navLinks.map(link => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                  className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
                     location.pathname === link.to
                       ? 'text-primary-600 bg-primary-50'
                       : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
@@ -87,30 +87,22 @@ export function Navbar() {
               ))}
             </nav>
 
-            {/* Search bar - desktop */}
-            <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xs">
+            {/* Search bar - visible on all screens */}
+            <form onSubmit={handleSearch} className="flex flex-1 max-w-[150px] sm:max-w-xs">
               <div className="relative w-full">
-                <Search className="absolute inset-y-0 start-0 ms-3 my-auto w-4 h-4 text-gray-400" />
+                <Search className="absolute inset-y-0 start-0 ms-2.5 my-auto w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
                 <input
                   type="text"
                   value={searchValue}
                   onChange={e => setSearchValue(e.target.value)}
                   placeholder={t('search')}
-                  className="w-full ps-9 pe-3 py-2 text-sm rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-primary-300 focus:ring-2 focus:ring-primary-100 transition-all outline-none"
+                  className="w-full ps-8 sm:ps-9 pe-2 sm:pe-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-primary-300 focus:ring-2 focus:ring-primary-100 transition-all outline-none"
                 />
               </div>
             </form>
 
             {/* Right actions */}
             <div className="flex items-center gap-1 sm:gap-2">
-              {/* Mobile search toggle */}
-              <button
-                onClick={() => setSearchOpen(!searchOpen)}
-                className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                <Search className="w-5 h-5" />
-              </button>
-
               <LanguageSwitcher />
 
               {/* Notifications */}
@@ -121,7 +113,6 @@ export function Navbar() {
                       const nextState = !notifOpen;
                       setNotifOpen(nextState);
                       
-                      // تحديث الإشعارات تلقائياً في قاعدة البيانات عند فتح القائمة عبر وظيفة الـ RPC
                       if (nextState && unreadCount > 0) {
                         await supabase.rpc('mark_user_notifications_as_read', { p_user_id: user.id });
                         notifications.forEach(n => { n.read = true; });
@@ -150,7 +141,6 @@ export function Navbar() {
                           <p className="px-4 py-8 text-center text-sm text-gray-400">{t('noNotifications')}</p>
                         ) : (
                           notifications.slice(0, 5).map(n => {
-                            // التحقق مما إذا كان الإشعار قد تم قراءته (يدعم حقل read أو is_read من الداتا بيز)
                             const isReadStatus = n.read ?? (n as any).is_read ?? false;
 
                             return (
@@ -161,8 +151,7 @@ export function Navbar() {
                               >
                                 <div className="flex items-start justify-between gap-2">
                                   <p className="text-sm font-semibold text-gray-900">{n.title}</p>
-                                  {/* مؤشر مرئي يوضح للأدمن أو المستخدم ما إذا تم قراءة الإشعار أم لا */}
-                                  <span className="flex items-center text-[10px] font-bold text-gray-400 shrink-0 mt-0.5" title={isReadStatus ? 'تمت القراءة' : 'غير مقروء'}>
+                                  <span className="flex items-center text-[10px] font-bold text-gray-400 shrink-0 mt-0.5">
                                     {isReadStatus ? (
                                       <span className="inline-flex items-center text-emerald-600 gap-0.5">
                                         <CheckCheck className="w-3.5 h-3.5" /> مقروء
@@ -185,14 +174,14 @@ export function Navbar() {
                 </div>
               )}
 
-              {/* Admin dashboard link - يظهر للأدمن فقط */}
+              {/* Admin dashboard link - visible on all screens */}
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap"
                 >
                   <LayoutDashboard className="w-4 h-4" />
-                  {t('dashboard')}
+                  <span className="hidden sm:inline">{t('dashboard')}</span>
                 </Link>
               )}
 
@@ -219,7 +208,7 @@ export function Navbar() {
                     <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-xs font-bold">
                       {profile?.full_name?.[0]?.toUpperCase() || 'U'}
                     </div>
-                    <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[100px] truncate">
+                    <span className="text-sm font-medium text-gray-700 max-w-[80px] sm:max-w-[100px] truncate">
                       {profile?.full_name?.split(' ')[0]}
                     </span>
                   </button>
@@ -259,88 +248,14 @@ export function Navbar() {
               ) : (
                 <Link
                   to="/login"
-                  className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+                  className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap"
                 >
                   {t('login')}
                 </Link>
               )}
-
-              {/* Mobile menu toggle */}
-              <button
-                onClick={() => setMobileOpen(!mobileOpen)}
-                className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
             </div>
           </div>
-
-          {/* Mobile search */}
-          {searchOpen && (
-            <form onSubmit={handleSearch} className="md:hidden pb-3 animate-slide-down">
-              <div className="relative">
-                <Search className="absolute inset-y-0 start-0 ms-3 my-auto w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchValue}
-                  onChange={e => setSearchValue(e.target.value)}
-                  placeholder={t('search')}
-                  className="w-full ps-9 pe-3 py-2.5 text-sm rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-primary-300 outline-none"
-                  autoFocus
-                />
-              </div>
-            </form>
-          )}
         </div>
-
-        {/* Mobile nav */}
-        {mobileOpen && (
-          <nav className="lg:hidden border-t border-gray-100 bg-white animate-slide-down">
-            <div className="px-4 py-3 space-y-1">
-              {navLinks.map(link => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`block px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors ${
-                    location.pathname === link.to
-                      ? 'text-primary-600 bg-primary-50'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              {user ? (
-                <>
-                  <Link to="/orders" className="block px-4 py-2.5 text-sm font-semibold rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                    {t('myOrders')}
-                  </Link>
-                  <Link to="/profile" className="block px-4 py-2.5 text-sm font-semibold rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                    {t('profile')}
-                  </Link>
-                  {isAdmin && (
-                    <Link to="/admin" className="block px-4 py-2.5 text-sm font-semibold rounded-lg text-primary-600 bg-primary-50">
-                      {t('dashboard')}
-                    </Link>
-                  )}
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-start px-4 py-2.5 text-sm font-semibold rounded-lg text-error-600 hover:bg-error-50 transition-colors"
-                  >
-                    {t('logout')}
-                  </button>
-                </>
-              ) : (
-                <Link
-                  to="/login"
-                  className="block px-4 py-2.5 text-sm font-semibold rounded-lg bg-primary-600 text-white text-center"
-                >
-                  {t('login')}
-                </Link>
-              )}
-            </div>
-          </nav>
-        )}
       </header>
     </>
   );
