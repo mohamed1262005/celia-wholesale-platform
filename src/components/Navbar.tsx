@@ -15,8 +15,7 @@ export function Navbar() {
   const { totalItems } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -26,7 +25,7 @@ export function Navbar() {
   const { notifications, unreadCount, markAsRead } = useNotifications(user?.id);
 
   useEffect(() => {
-    setMobileOpen(false);
+    setMobileMenuOpen(false);
     setProfileOpen(false);
     setNotifOpen(false);
   }, [location.pathname]);
@@ -44,7 +43,6 @@ export function Navbar() {
     e.preventDefault();
     if (searchValue.trim()) {
       navigate(`/products?search=${encodeURIComponent(searchValue.trim())}`);
-      setSearchOpen(false);
       setSearchValue('');
     }
   };
@@ -61,203 +59,238 @@ export function Navbar() {
   ];
 
   return (
-    <>
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
-          <div className="flex items-center justify-between h-16 gap-2 sm:gap-4 flex-wrap">
-            {/* Logo */}
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="flex items-center justify-between h-16 gap-2">
+          
+          {/* الجانب الأيسر: زر القائمة للموبايل + اللوجو */}
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              aria-label="Toggle Menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
             <div className="flex-shrink-0">
               <Logo />
             </div>
+          </div>
 
-            {/* Desktop & Mobile visible nav */}
-            <nav className="flex items-center gap-1 overflow-x-auto max-w-full">
-              {navLinks.map(link => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
-                    location.pathname === link.to
-                      ? 'text-primary-600 bg-primary-50'
-                      : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-
-            {/* Search bar - visible on all screens */}
-            <form onSubmit={handleSearch} className="flex flex-1 max-w-[150px] sm:max-w-xs">
-              <div className="relative w-full">
-                <Search className="absolute inset-y-0 start-0 ms-2.5 my-auto w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchValue}
-                  onChange={e => setSearchValue(e.target.value)}
-                  placeholder={t('search')}
-                  className="w-full ps-8 sm:ps-9 pe-2 sm:pe-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-primary-300 focus:ring-2 focus:ring-primary-100 transition-all outline-none"
-                />
-              </div>
-            </form>
-
-            {/* Right actions */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              <LanguageSwitcher />
-
-              {/* Notifications */}
-              {user && (
-                <div className="relative" ref={notifRef}>
-                  <button
-                    onClick={async () => {
-                      const nextState = !notifOpen;
-                      setNotifOpen(nextState);
-                      
-                      if (nextState && unreadCount > 0) {
-                        await supabase.rpc('mark_user_notifications_as_read', { p_user_id: user.id });
-                        notifications.forEach(n => { n.read = true; });
-                      }
-                    }}
-                    className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
-                  >
-                    <Bell className="w-5 h-5" />
-                    {unreadCount > 0 && (
-                      <span className="absolute top-1 end-1 w-4 h-4 rounded-full bg-primary-500 text-white text-[10px] font-bold flex items-center justify-center">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                    )}
-                  </button>
-
-                  {notifOpen && (
-                    <div className="absolute end-0 mt-2 w-80 bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
-                      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                        <h4 className="font-bold text-sm text-gray-900">{t('notifications')}</h4>
-                        <Link to="/notifications" className="text-xs text-primary-600 font-semibold hover:underline">
-                          {t('viewAll')}
-                        </Link>
-                      </div>
-                      <div className="max-h-80 overflow-y-auto">
-                        {notifications.length === 0 ? (
-                          <p className="px-4 py-8 text-center text-sm text-gray-400">{t('noNotifications')}</p>
-                        ) : (
-                          notifications.slice(0, 5).map(n => {
-                            const isReadStatus = n.read ?? (n as any).is_read ?? false;
-
-                            return (
-                              <button
-                                key={n.id}
-                                onClick={() => { if (!isReadStatus) markAsRead(n.id); navigate('/notifications'); }}
-                                className={`w-full text-start px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors relative ${!isReadStatus ? 'bg-primary-50/30' : ''}`}
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <p className="text-sm font-semibold text-gray-900">{n.title}</p>
-                                  <span className="flex items-center text-[10px] font-bold text-gray-400 shrink-0 mt-0.5">
-                                    {isReadStatus ? (
-                                      <span className="inline-flex items-center text-emerald-600 gap-0.5">
-                                        <CheckCheck className="w-3.5 h-3.5" /> مقروء
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center text-amber-500 gap-0.5">
-                                        <Check className="w-3.5 h-3.5" /> جديد
-                                      </span>
-                                    )}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.message}</p>
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Admin dashboard link - visible on all screens */}
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t('dashboard')}</span>
-                </Link>
-              )}
-
-              {/* Cart */}
+          {/* روابط التنقل للشاشات الكبيرة فقط */}
+          <nav className="hidden md:flex items-center gap-1">
+            {navLinks.map(link => (
               <Link
-                to="/cart"
-                className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                key={link.to}
+                to={link.to}
+                className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                  location.pathname === link.to
+                    ? 'text-primary-600 bg-primary-50'
+                    : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
+                }`}
               >
-                <ShoppingBag className="w-5 h-5" />
-                {totalItems > 0 && (
-                  <span className="absolute top-1 end-1 w-4 h-4 rounded-full bg-secondary-500 text-white text-[10px] font-bold flex items-center justify-center">
-                    {totalItems > 9 ? '9+' : totalItems}
-                  </span>
-                )}
+                {link.label}
               </Link>
+            ))}
+          </nav>
 
-              {/* Profile / Auth */}
-              {user ? (
-                <div className="relative" ref={profileRef}>
-                  <button
-                    onClick={() => setProfileOpen(!profileOpen)}
-                    className="flex items-center gap-2 p-1.5 pe-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                  >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-xs font-bold">
-                      {profile?.full_name?.[0]?.toUpperCase() || 'U'}
-                    </div>
-                    <span className="text-sm font-medium text-gray-700 max-w-[80px] sm:max-w-[100px] truncate">
-                      {profile?.full_name?.split(' ')[0]}
-                    </span>
-                  </button>
-
-                  {profileOpen && (
-                    <div className="absolute end-0 mt-2 w-56 bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-bold text-gray-900 truncate">{profile?.full_name}</p>
-                        <p className="text-xs text-gray-400 truncate">{profile?.email}</p>
-                      </div>
-                      <div className="py-1">
-                        <Link to="/profile" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                          <User className="w-4 h-4 text-gray-400" />
-                          {t('profile')}
-                        </Link>
-                        <Link to="/orders" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                          <Package className="w-4 h-4 text-gray-400" />
-                          {t('myOrders')}
-                        </Link>
-                        {isAdmin && (
-                          <Link to="/admin" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-primary-600 font-semibold hover:bg-primary-50 transition-colors">
-                            <LayoutDashboard className="w-4 h-4" />
-                            {t('dashboard')}
-                          </Link>
-                        )}
-                        <button
-                          onClick={handleLogout}
-                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-error-600 hover:bg-error-50 transition-colors cursor-pointer"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          {t('logout')}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  to="/login"
-                  className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap"
-                >
-                  {t('login')}
-                </Link>
-              )}
+          {/* شريط البحث (يظهر بشكل مرن متجاوب) */}
+          <form onSubmit={handleSearch} className="hidden sm:flex flex-1 max-w-xs mx-2">
+            <div className="relative w-full">
+              <Search className="absolute inset-y-0 start-0 ms-3 my-auto w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchValue}
+                onChange={e => setSearchValue(e.target.value)}
+                placeholder={t('search')}
+                className="w-full ps-9 pe-3 py-1.5 text-xs sm:text-sm rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-primary-300 focus:ring-2 focus:ring-primary-100 transition-all outline-none"
+              />
             </div>
+          </form>
+
+          {/* أزرار الإجراءات اليمنى (اللغة، الإشعارات، السلة، البروفايل) */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <LanguageSwitcher />
+
+            {/* الإشعارات */}
+            {user && (
+              <div className="relative" ref={notifRef}>
+                <button
+                  onClick={async () => {
+                    const nextState = !notifOpen;
+                    setNotifOpen(nextState);
+                    if (nextState && unreadCount > 0) {
+                      await supabase.rpc('mark_user_notifications_as_read', { p_user_id: user.id });
+                      notifications.forEach(n => { n.read = true; });
+                    }
+                  }}
+                  className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 end-1 w-4 h-4 rounded-full bg-primary-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {notifOpen && (
+                  <div className="absolute end-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                      <h4 className="font-bold text-sm text-gray-900">{t('notifications')}</h4>
+                      <Link to="/notifications" className="text-xs text-primary-600 font-semibold hover:underline">
+                        {t('viewAll')}
+                      </Link>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <p className="px-4 py-8 text-center text-sm text-gray-400">{t('noNotifications')}</p>
+                      ) : (
+                        notifications.slice(0, 5).map(n => {
+                          const isReadStatus = n.read ?? (n as any).is_read ?? false;
+                          return (
+                            <button
+                              key={n.id}
+                              onClick={() => { if (!isReadStatus) markAsRead(n.id); navigate('/notifications'); }}
+                              className={`w-full text-start px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors relative ${!isReadStatus ? 'bg-primary-50/30' : ''}`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-sm font-semibold text-gray-900">{n.title}</p>
+                                <span className="flex items-center text-[10px] font-bold text-gray-400 shrink-0 mt-0.5">
+                                  {isReadStatus ? (
+                                    <span className="inline-flex items-center text-emerald-600 gap-0.5"><CheckCheck className="w-3.5 h-3.5" /> مقروء</span>
+                                  ) : (
+                                    <span className="inline-flex items-center text-amber-500 gap-0.5"><Check className="w-3.5 h-3.5" /> جديد</span>
+                                  )}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.message}</p>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* لوحة التحكم للآدمن */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                <span>{t('dashboard')}</span>
+              </Link>
+            )}
+
+            {/* السلة */}
+            <Link
+              to="/cart"
+              className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              <ShoppingBag className="w-5 h-5" />
+              {totalItems > 0 && (
+                <span className="absolute top-1 end-1 w-4 h-4 rounded-full bg-secondary-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {totalItems > 9 ? '9+' : totalItems}
+                </span>
+              )}
+            </Link>
+
+            {/* البروفايل أو تسجيل الدخول */}
+            {user ? (
+              <div className="relative" ref={profileRef}>
+                <button
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  className="flex items-center gap-1 p-1 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {profile?.full_name?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                </button>
+
+                {profileOpen && (
+                  <div className="absolute end-0 mt-2 w-56 bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-sm font-bold text-gray-900 truncate">{profile?.full_name}</p>
+                      <p className="text-xs text-gray-400 truncate">{profile?.email}</p>
+                    </div>
+                    <div className="py-1">
+                      <Link to="/profile" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                        <User className="w-4 h-4 text-gray-400" />
+                        {t('profile')}
+                      </Link>
+                      <Link to="/orders" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                        <Package className="w-4 h-4 text-gray-400" />
+                        {t('myOrders')}
+                      </Link>
+                      {isAdmin && (
+                        <Link to="/admin" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-primary-600 font-semibold hover:bg-primary-50 transition-colors sm:hidden">
+                          <LayoutDashboard className="w-4 h-4" />
+                          {t('dashboard')}
+                        </Link>
+                      )}
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-error-600 hover:bg-error-50 transition-colors cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        {t('logout')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="inline-flex items-center px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap"
+              >
+                {t('login')}
+              </Link>
+            )}
           </div>
         </div>
-      </header>
-    </>
+
+        {/* شريط البحث الصغير يظهر تحت الهيدر مباشرة على الهواتف الضيقة */}
+        <div className="sm:hidden pb-3 pt-1">
+          <form onSubmit={handleSearch}>
+            <div className="relative w-full">
+              <Search className="absolute inset-y-0 start-0 ms-3 my-auto w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchValue}
+                onChange={e => setSearchValue(e.target.value)}
+                placeholder={t('search')}
+                className="w-full ps-9 pe-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-primary-300 focus:ring-2 focus:ring-primary-100 transition-all outline-none"
+              />
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* القائمة الجانبية المنسدلة للموبايل (Mobile Drawer Menu) */}
+      {mobileMenuOpen && (
+        <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-gray-100 shadow-xl animate-slide-down z-50 p-4 space-y-2">
+          {navLinks.map(link => (
+            <Link
+              key={link.to}
+              to={link.to}
+              onClick={() => setMobileMenuOpen(false)}
+              className={`block px-4 py-2.5 text-sm font-semibold rounded-xl transition-colors ${
+                location.pathname === link.to
+                  ? 'text-primary-600 bg-primary-50'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </header>
   );
 }
 

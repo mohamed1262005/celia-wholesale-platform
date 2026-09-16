@@ -45,6 +45,7 @@ export function useAllCategories() {
 }
 
 export function useProducts(filters?: {
+  categoryId?: string;
   categorySlug?: string;
   search?: string;
   availability?: 'all' | 'available';
@@ -58,8 +59,6 @@ export function useProducts(filters?: {
     setLoading(true);
     setError(null);
 
-    // طلب واحد بيجيب المنتجات + التصنيف + شرائح الأسعار مع بعض (join)
-    // بدل ما نعمل 2 query منفصلين لكل منتج داخل loop
     let query = supabase
       .from('products')
       .select(`
@@ -82,12 +81,22 @@ export function useProducts(filters?: {
     } else {
       let result = (data as Product[]) || [];
 
-      // تصفية حسب التصنيف لو محدد
-      if (filters?.categorySlug) {
-        result = result.filter((p: any) => p.categories?.slug === filters.categorySlug);
+      if (filters?.categoryId) {
+        result = result.filter((p: any) => {
+          const cat = p.categories || p.category;
+          return (
+            p.category_id === filters.categoryId || 
+            cat?.id === filters.categoryId || 
+            cat?.slug === filters.categoryId
+          );
+        });
+      } else if (filters?.categorySlug) {
+        result = result.filter((p: any) => {
+          const cat = p.categories || p.category;
+          return cat?.slug === filters.categorySlug;
+        });
       }
 
-      // تصفية البحث بالاسم عربي أو إنجليزي
       if (filters?.search) {
         const q = filters.search.toLowerCase();
         result = result.filter(p =>
@@ -96,8 +105,6 @@ export function useProducts(filters?: {
         );
       }
 
-      // تصفية المنتجات المتوفرة في المخزن — بنفس منطق getAvailableStock
-      // المستخدم في باقي المنصة (stock_quantity - reserved_quantity)
       if (filters?.availability === 'available') {
         result = result.filter((p) => getAvailableStock(p) > 0);
       }
@@ -105,7 +112,7 @@ export function useProducts(filters?: {
       setProducts(result);
     }
     setLoading(false);
-  }, [filters?.categorySlug, filters?.search, filters?.availability, filters?.sort]);
+  }, [filters?.categoryId, filters?.categorySlug, filters?.search, filters?.availability, filters?.sort]);
 
   useEffect(() => { load(); }, [load]);
   return { products, loading, error, reload: load };
@@ -125,7 +132,6 @@ export function useProduct(id: string | undefined) {
       setLoading(true);
       setError(null);
 
-      // نفس المبدأ: طلب واحد بيجيب المنتج + التصنيف + شرائح الأسعار مع بعض
       const { data, error } = await supabase
         .from('products')
         .select(`

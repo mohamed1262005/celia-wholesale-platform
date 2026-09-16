@@ -18,14 +18,15 @@ export function ProductsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false); // حالة فتح وإغلاق ماسح الباركود الذكي
 
-  const categorySlug = searchParams.get('category') || '';
+  // فلترة التصنيف بقت بالـ id (مضمون دايمًا)، مش بالـ slug اللي ممكن يكون فاسد في بيانات قديمة
+  const categoryId = searchParams.get('category') || '';
   const search = searchParams.get('search') || '';
   const availability = (searchParams.get('availability') as 'all' | 'available') || 'all';
   const sort = (searchParams.get('sort') as 'newest' | 'price_low' | 'price_high' | 'name') || 'newest';
 
   const { categories, loading: catLoading } = useCategories();
   const { products, loading, error } = useProducts({
-    categorySlug: categorySlug || undefined,
+    categoryId: categoryId || undefined,
     search: search || undefined,
     availability,
     sort,
@@ -50,9 +51,9 @@ export function ProductsPage() {
     setSearchInput('');
   };
 
-  const hasActiveFilters = Boolean(categorySlug || search || availability !== 'all');
+  const hasActiveFilters = Boolean(categoryId || search || availability !== 'all');
 
-  const activeCategory = categories.find(c => c.slug === categorySlug);
+  const activeCategory = categories.find(c => c.id === categoryId);
   const pageTitle = activeCategory
     ? (lang === 'ar' ? activeCategory.name_ar : activeCategory.name_en)
     : search
@@ -100,7 +101,7 @@ export function ProductsPage() {
                 <button
                   onClick={() => updateParam('category', '')}
                   className={`block w-full text-start px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
-                    !categorySlug ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'
+                    !categoryId ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >
                   {t('allCategories')}
@@ -111,9 +112,9 @@ export function ProductsPage() {
                   categories.map(cat => (
                     <button
                       key={cat.id}
-                      onClick={() => updateParam('category', cat.slug)}
+                      onClick={() => updateParam('category', cat.id)}
                       className={`block w-full text-start px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
-                        categorySlug === cat.slug ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'
+                        categoryId === cat.id ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'
                       }`}
                     >
                       {lang === 'ar' ? cat.name_ar : cat.name_en}
@@ -201,10 +202,10 @@ export function ProductsPage() {
                 <button onClick={() => setShowFilters(false)} className="cursor-pointer"><X className="w-5 h-5 text-gray-400" /></button>
               </div>
               <label className="block text-sm font-medium text-gray-700 mb-2">{t('category')}</label>
-              <Select value={categorySlug} onChange={e => updateParam('category', e.target.value)} className="mb-4">
+              <Select value={categoryId} onChange={e => updateParam('category', e.target.value)} className="mb-4">
                 <option value="">{t('allCategories')}</option>
                 {categories.map(cat => (
-                  <option key={cat.id} value={cat.slug}>{lang === 'ar' ? cat.name_ar : cat.name_en}</option>
+                  <option key={cat.id} value={cat.id}>{lang === 'ar' ? cat.name_ar : cat.name_en}</option>
                 ))}
               </Select>
               <label className="block text-sm font-medium text-gray-700 mb-2">{t('availability')}</label>

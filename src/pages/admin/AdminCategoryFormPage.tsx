@@ -161,7 +161,6 @@ export function AdminCategoryFormPage() {
             />
           </div>
 
-          {/* حقل رفع صورة التصنيف مع المعاينة */}
           <div className="md:col-span-2">
             <label className="block text-xs font-bold text-gray-700 mb-2">صورة التصنيف</label>
             <div className="flex items-center gap-4">

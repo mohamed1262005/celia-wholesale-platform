@@ -20,7 +20,6 @@ export function ProductCard({ product }: ProductCardProps) {
   const [showQuickView, setShowQuickView] = useState(false);
 
   const name = lang === 'ar' ? ((product as any).name_ar || product.name) : ((product as any).name_en || product.name);
-  
   const description = (product as any).description || (product as any).description_ar || (product as any).description_en;
 
   const available = getAvailableStock(product);
@@ -85,7 +84,7 @@ export function ProductCard({ product }: ProductCardProps) {
         </Link>
 
         {/* Content */}
-        <div className="p-4 flex flex-col flex-1">
+        <div className="p-3 sm:p-4 flex flex-col flex-1">
           <Link to={`/products/${product.id}`}>
             <h3 className="font-bold text-sm text-gray-900 line-clamp-1 hover:text-primary-600 transition-colors">{name}</h3>
           </Link>
@@ -99,23 +98,27 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Price */}
           <div className="mt-3 flex items-baseline justify-between">
             <div>
-              <span className="text-lg font-extrabold text-primary-600">{price.toFixed(2)}</span>
+              <span className="text-base sm:text-lg font-extrabold text-primary-600">{price.toFixed(2)}</span>
               <span className="text-xs text-gray-400 ms-1">{t('currency')}</span>
             </div>
             {available > 0 && available <= 10 && (
-              <span className="text-xs text-warning-600 font-medium">{t('onlyLeft', { count: available })}</span>
+              <span className="text-[11px] text-warning-600 font-medium">{t('onlyLeft', { count: available })}</span>
             )}
           </div>
 
-          {/* Quantity + Add to cart */}
+          {/* Quantity + Add to cart (مع تحسين وتوسيع أزرار + و - للموبايل) */}
           {stockStatus !== 'out' ? (
-            <div className="mt-3 flex items-center gap-2">
-              <QuantitySelector value={qty} onChange={setQty} max={available} min={1} size="sm" />
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center justify-between gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-100">
+                <span className="text-xs font-medium text-gray-600 px-1">الكمية:</span>
+                <QuantitySelector value={qty} onChange={setQty} max={available} min={1} size="sm" />
+              </div>
+
               <button
                 onClick={handleAddToCart}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-primary-600 text-white text-xs font-semibold rounded-xl hover:bg-primary-700 transition-colors active:scale-95 cursor-pointer"
+                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-primary-600 text-white text-xs sm:text-sm font-semibold rounded-xl hover:bg-primary-700 transition-colors active:scale-95 cursor-pointer shadow-sm"
               >
-                <ShoppingBag className="w-3.5 h-3.5" />
+                <ShoppingBag className="w-4 h-4" />
                 {t('addToCart')}
               </button>
             </div>
@@ -132,8 +135,8 @@ export function ProductCard({ product }: ProductCardProps) {
 
           {/* Total preview */}
           {stockStatus !== 'out' && qty > 1 && (
-            <p className="mt-2 text-xs text-gray-500 text-center">
-              {t('total')}: <span className="font-bold text-gray-700">{total.toFixed(2)} {t('currency')}</span>
+            <p className="mt-2 text-xs text-gray-500 text-center font-medium">
+              {t('total')}: <span className="font-bold text-primary-700">{total.toFixed(2)} {t('currency')}</span>
             </p>
           )}
         </div>
@@ -187,11 +190,10 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
             </div>
           )}
         </div>
-        <div className="md:w-1/2 p-6 flex flex-col">
+        <div className="md:w-1/2 p-6 flex flex-col overflow-y-auto">
           <h3 className="text-lg font-bold text-gray-900">{name}</h3>
           {product.packaging && <p className="text-sm text-gray-400 mt-1">{product.packaging}</p>}
           
-          {/* قسم الوصف: كلمة الوصف في السطر وتحتها التفاصيل */}
           {description && (
             <div className="mt-3 pt-3 border-t border-gray-100">
               <h4 className="text-xs font-bold text-gray-700 mb-1">الوصف:</h4>
@@ -245,3 +247,5 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
     </div>
   );
 }
+
+export default ProductCard;
