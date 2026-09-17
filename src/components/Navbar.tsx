@@ -94,7 +94,7 @@ export function Navbar() {
             ))}
           </nav>
 
-          {/* شريط البحث (يظهر بشكل مرن متجاوب) */}
+          {/* شريط البحث */}
           <form onSubmit={handleSearch} className="hidden sm:flex flex-1 max-w-xs mx-2">
             <div className="relative w-full">
               <Search className="absolute inset-y-0 start-0 ms-3 my-auto w-4 h-4 text-gray-400" />
@@ -108,7 +108,7 @@ export function Navbar() {
             </div>
           </form>
 
-          {/* أزرار الإجراءات اليمنى (اللغة، الإشعارات، السلة، البروفايل) */}
+          {/* أزرار الإجراءات اليمنى */}
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <LanguageSwitcher />
 
@@ -135,8 +135,8 @@ export function Navbar() {
                 </button>
 
                 {notifOpen && (
-                  <div className="absolute end-0 mt-2 w-[min(20rem,calc(100vw-1.5rem))] bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
-                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-2">
+                  <div className="absolute end-[-40px] sm:end-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-slide-down">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-2 bg-gray-50/50">
                       <h4 className="font-bold text-sm text-gray-900 truncate">{t('notifications')}</h4>
                       <Link to="/notifications" className="text-xs text-primary-600 font-semibold hover:underline flex-shrink-0 whitespace-nowrap">
                         {t('viewAll')}
@@ -175,11 +175,11 @@ export function Navbar() {
               </div>
             )}
 
-            {/* لوحة التحكم للآدمن */}
+            {/* زر لوحة التحكم للآدمن (ظاهر في الشاشات الكبيرة) */}
             {isAdmin && (
               <Link
                 to="/admin"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap shadow-xs"
               >
                 <LayoutDashboard className="w-4 h-4" />
                 <span>{t('dashboard')}</span>
@@ -227,7 +227,7 @@ export function Navbar() {
                         {t('myOrders')}
                       </Link>
                       {isAdmin && (
-                        <Link to="/admin" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-primary-600 font-semibold hover:bg-primary-50 transition-colors sm:hidden">
+                        <Link to="/admin" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-primary-600 font-semibold bg-primary-50/50 hover:bg-primary-50 transition-colors">
                           <LayoutDashboard className="w-4 h-4" />
                           {t('dashboard')}
                         </Link>
@@ -254,7 +254,7 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* شريط البحث الصغير يظهر تحت الهيدر مباشرة على الهواتف الضيقة */}
+        {/* شريط البحث الصغير للهواتف */}
         <div className="sm:hidden pb-3 pt-1">
           <form onSubmit={handleSearch}>
             <div className="relative w-full">
@@ -271,7 +271,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* القائمة الجانبية المنسدلة للموبايل (Mobile Drawer Menu) */}
+      {/* القائمة الجانبية المنسدلة للموبايل */}
       {mobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-gray-100 shadow-xl animate-slide-down z-50 p-4 space-y-2">
           {navLinks.map(link => (
@@ -289,15 +289,15 @@ export function Navbar() {
             </Link>
           ))}
 
-          {/* لوحة التحكم للآدمن — مضافة هنا كمان عشان تبقى ظاهرة مباشرة من قائمة الهامبرجر على الموبايل */}
+          {/* زر لوحة التحكم للآدمن (موجود في قائمة الموبايل لسهولة الوصول إليه) */}
           {isAdmin && (
             <Link
               to="/admin"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-xs"
             >
               <LayoutDashboard className="w-4 h-4" />
-              {t('dashboard')}
+              <span>{t('dashboard')}</span>
             </Link>
           )}
         </div>
