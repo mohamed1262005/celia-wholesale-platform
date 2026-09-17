@@ -167,7 +167,7 @@ export function Navbar() {
                               className={`w-full text-start px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors relative ${!isReadStatus ? 'bg-primary-50/30' : ''}`}
                             >
                               <div className="flex items-start justify-between gap-2">
-                                <p className="text-sm font-semibold text-gray-900">{n.title}</p>
+                                <p className="text-sm font-semibold text-gray-900 break-words">{n.title}</p>
                                 <span className="flex items-center text-[10px] font-bold text-gray-400 shrink-0 mt-0.5">
                                   {isReadStatus ? (
                                     <span className="inline-flex items-center text-emerald-600 gap-0.5"><CheckCheck className="w-3.5 h-3.5" /> مقروء</span>
@@ -176,7 +176,7 @@ export function Navbar() {
                                   )}
                                 </span>
                               </div>
-                              <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.message}</p>
+                              <p className="text-xs text-gray-500 mt-1 whitespace-pre-wrap break-words">{n.message}</p>
                             </button>
                           );
                         })
