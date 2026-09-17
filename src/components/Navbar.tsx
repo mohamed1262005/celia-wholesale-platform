@@ -112,15 +112,15 @@ export function Navbar() {
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <LanguageSwitcher />
 
-            {/* زر لوحة التحكم (يظهر بوضوح تام على الموبايل والكمبيوتر) */}
+            {/* زر لوحة التحكم (يظهر للآدمن) */}
             {isAdmin && (
               <Link
                 to="/admin"
-                className="inline-flex items-center justify-center p-2 sm:px-3 sm:py-1.5 text-xs font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap shadow-xs cursor-pointer"
+                className="hidden sm:inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap shadow-xs cursor-pointer"
                 title={t('dashboard')}
               >
-                <LayoutDashboard className="w-4 h-4 sm:me-1.5" />
-                <span className="hidden sm:inline">{t('dashboard')}</span>
+                <LayoutDashboard className="w-4 h-4 me-1.5" />
+                <span>{t('dashboard')}</span>
               </Link>
             )}
 
@@ -266,23 +266,35 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* القائمة الجانبية للموبايل */}
+      {/* قائمة الموبايل المنسدلة المرتبة والصغيرة */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-gray-100 shadow-xl animate-slide-down z-50 p-4 space-y-2">
+        <div className="md:hidden absolute top-full start-0 w-full bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-xl animate-slide-down z-50 px-4 py-3 space-y-1.5">
           {navLinks.map(link => (
             <Link
               key={link.to}
               to={link.to}
               onClick={() => setMobileMenuOpen(false)}
-              className={`block px-4 py-2.5 text-sm font-semibold rounded-xl transition-colors ${
+              className={`block px-3.5 py-2 text-xs font-bold rounded-xl transition-all ${
                 location.pathname === link.to
-                  ? 'text-primary-600 bg-primary-50'
+                  ? 'text-primary-600 bg-primary-50 shadow-xs'
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
               {link.label}
             </Link>
           ))}
+
+          {/* زر لوحة التحكم للموبايل لو الآدمن مسجل دخول */}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-all shadow-xs mt-1"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span>{t('dashboard')}</span>
+            </Link>
+          )}
         </div>
       )}
     </header>
