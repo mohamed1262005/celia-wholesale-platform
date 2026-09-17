@@ -147,7 +147,7 @@ export function Navbar() {
                 </button>
 
                 {notifOpen && (
-                  <div className="absolute left-0 sm:left-auto sm:end-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
+                  <div className="fixed sm:absolute left-1/2 sm:left-auto sm:end-0 -translate-x-1/2 sm:translate-x-0 top-20 sm:top-auto sm:mt-2 w-[92vw] sm:w-80 max-w-sm bg-white rounded-2xl shadow-2xl sm:shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
                     <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                       <h4 className="font-bold text-sm text-gray-900">{t('notifications')}</h4>
                       <Link to="/notifications" className="text-xs text-primary-600 font-semibold hover:underline">
