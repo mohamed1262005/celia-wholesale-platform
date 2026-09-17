@@ -67,7 +67,7 @@ export function Navbar() {
           <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              className="md:hidden p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
               aria-label="Toggle Menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -112,6 +112,18 @@ export function Navbar() {
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <LanguageSwitcher />
 
+            {/* زر لوحة التحكم (يظهر بوضوح تام على الموبايل والكمبيوتر) */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="inline-flex items-center justify-center p-2 sm:px-3 sm:py-1.5 text-xs font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap shadow-xs cursor-pointer"
+                title={t('dashboard')}
+              >
+                <LayoutDashboard className="w-4 h-4 sm:me-1.5" />
+                <span className="hidden sm:inline">{t('dashboard')}</span>
+              </Link>
+            )}
+
             {/* الإشعارات */}
             {user && (
               <div className="relative" ref={notifRef}>
@@ -135,10 +147,10 @@ export function Navbar() {
                 </button>
 
                 {notifOpen && (
-                  <div className="absolute end-[-40px] sm:end-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-slide-down">
-                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-2 bg-gray-50/50">
-                      <h4 className="font-bold text-sm text-gray-900 truncate">{t('notifications')}</h4>
-                      <Link to="/notifications" className="text-xs text-primary-600 font-semibold hover:underline flex-shrink-0 whitespace-nowrap">
+                  <div className="absolute end-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                      <h4 className="font-bold text-sm text-gray-900">{t('notifications')}</h4>
+                      <Link to="/notifications" className="text-xs text-primary-600 font-semibold hover:underline">
                         {t('viewAll')}
                       </Link>
                     </div>
@@ -155,7 +167,7 @@ export function Navbar() {
                               className={`w-full text-start px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors relative ${!isReadStatus ? 'bg-primary-50/30' : ''}`}
                             >
                               <div className="flex items-start justify-between gap-2">
-                                <p className="text-sm font-semibold text-gray-900 min-w-0 truncate">{n.title}</p>
+                                <p className="text-sm font-semibold text-gray-900">{n.title}</p>
                                 <span className="flex items-center text-[10px] font-bold text-gray-400 shrink-0 mt-0.5">
                                   {isReadStatus ? (
                                     <span className="inline-flex items-center text-emerald-600 gap-0.5"><CheckCheck className="w-3.5 h-3.5" /> مقروء</span>
@@ -175,21 +187,10 @@ export function Navbar() {
               </div>
             )}
 
-            {/* زر لوحة التحكم للآدمن (ظاهر في الشاشات الكبيرة) */}
-            {isAdmin && (
-              <Link
-                to="/admin"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap shadow-xs"
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                <span>{t('dashboard')}</span>
-              </Link>
-            )}
-
             {/* السلة */}
             <Link
               to="/cart"
-              className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
             >
               <ShoppingBag className="w-5 h-5" />
               {totalItems > 0 && (
@@ -212,7 +213,7 @@ export function Navbar() {
                 </button>
 
                 {profileOpen && (
-                  <div className="absolute end-0 mt-2 w-[min(14rem,calc(100vw-1.5rem))] bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
+                  <div className="absolute end-0 mt-2 w-56 bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
                     <div className="px-4 py-3 border-b border-gray-100">
                       <p className="text-sm font-bold text-gray-900 truncate">{profile?.full_name}</p>
                       <p className="text-xs text-gray-400 truncate">{profile?.email}</p>
@@ -226,12 +227,6 @@ export function Navbar() {
                         <Package className="w-4 h-4 text-gray-400" />
                         {t('myOrders')}
                       </Link>
-                      {isAdmin && (
-                        <Link to="/admin" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-primary-600 font-semibold bg-primary-50/50 hover:bg-primary-50 transition-colors">
-                          <LayoutDashboard className="w-4 h-4" />
-                          {t('dashboard')}
-                        </Link>
-                      )}
                       <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-error-600 hover:bg-error-50 transition-colors cursor-pointer"
@@ -246,7 +241,7 @@ export function Navbar() {
             ) : (
               <Link
                 to="/login"
-                className="inline-flex items-center px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap"
+                className="inline-flex items-center px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap cursor-pointer"
               >
                 {t('login')}
               </Link>
@@ -271,7 +266,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* القائمة الجانبية المنسدلة للموبايل */}
+      {/* القائمة الجانبية للموبايل */}
       {mobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-gray-100 shadow-xl animate-slide-down z-50 p-4 space-y-2">
           {navLinks.map(link => (
@@ -288,18 +283,6 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
-
-          {/* زر لوحة التحكم للآدمن (موجود في قائمة الموبايل لسهولة الوصول إليه) */}
-          {isAdmin && (
-            <Link
-              to="/admin"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-xs"
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              <span>{t('dashboard')}</span>
-            </Link>
-          )}
         </div>
       )}
     </header>
