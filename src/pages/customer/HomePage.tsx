@@ -172,7 +172,7 @@ export function HomePage() {
               return (
                 <Link
                   key={cat.id}
-                  to={`/products?category=${cat.slug}`}
+                  to={`/products?category=${cat.id}`}
                   className="group relative h-44 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer border border-pink-100/60 bg-white flex flex-col justify-end p-4"
                 >
                   <img

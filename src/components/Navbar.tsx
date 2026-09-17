@@ -135,10 +135,10 @@ export function Navbar() {
                 </button>
 
                 {notifOpen && (
-                  <div className="absolute end-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
-                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                      <h4 className="font-bold text-sm text-gray-900">{t('notifications')}</h4>
-                      <Link to="/notifications" className="text-xs text-primary-600 font-semibold hover:underline">
+                  <div className="absolute end-0 mt-2 w-[min(20rem,calc(100vw-1.5rem))] bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-2">
+                      <h4 className="font-bold text-sm text-gray-900 truncate">{t('notifications')}</h4>
+                      <Link to="/notifications" className="text-xs text-primary-600 font-semibold hover:underline flex-shrink-0 whitespace-nowrap">
                         {t('viewAll')}
                       </Link>
                     </div>
@@ -155,7 +155,7 @@ export function Navbar() {
                               className={`w-full text-start px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors relative ${!isReadStatus ? 'bg-primary-50/30' : ''}`}
                             >
                               <div className="flex items-start justify-between gap-2">
-                                <p className="text-sm font-semibold text-gray-900">{n.title}</p>
+                                <p className="text-sm font-semibold text-gray-900 min-w-0 truncate">{n.title}</p>
                                 <span className="flex items-center text-[10px] font-bold text-gray-400 shrink-0 mt-0.5">
                                   {isReadStatus ? (
                                     <span className="inline-flex items-center text-emerald-600 gap-0.5"><CheckCheck className="w-3.5 h-3.5" /> مقروء</span>
@@ -212,7 +212,7 @@ export function Navbar() {
                 </button>
 
                 {profileOpen && (
-                  <div className="absolute end-0 mt-2 w-56 bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
+                  <div className="absolute end-0 mt-2 w-[min(14rem,calc(100vw-1.5rem))] bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
                     <div className="px-4 py-3 border-b border-gray-100">
                       <p className="text-sm font-bold text-gray-900 truncate">{profile?.full_name}</p>
                       <p className="text-xs text-gray-400 truncate">{profile?.email}</p>
@@ -288,6 +288,18 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
+
+          {/* لوحة التحكم للآدمن — مضافة هنا كمان عشان تبقى ظاهرة مباشرة من قائمة الهامبرجر على الموبايل */}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              {t('dashboard')}
+            </Link>
+          )}
         </div>
       )}
     </header>

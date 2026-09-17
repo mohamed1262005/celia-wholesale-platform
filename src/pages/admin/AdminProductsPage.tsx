@@ -31,9 +31,11 @@ export function AdminProductsPage() {
     price: '',
     stock_quantity: '',
     packaging: '',
-    image_url: '',
     description: '',
   });
+
+  // قائمة روابط صور المنتج — تدعم أكتر من صورة للمنتج الواحد
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -73,7 +75,7 @@ export function AdminProductsPage() {
     }
   };
 
-  // دالة رفع الصورة المباشرة لـ Supabase Storage
+  // دالة رفع الصورة المباشرة لـ Supabase Storage — بتضيف الصورة الجديدة لقائمة الصور بدل ما تستبدلها
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -94,13 +96,19 @@ export function AdminProductsPage() {
         .from('products')
         .getPublicUrl(filePath);
 
-      setFormData(prev => ({ ...prev, image_url: publicUrl }));
+      setImageUrls(prev => [...prev, publicUrl]);
       showToast(lang === 'ar' ? 'تم رفع الصورة بنجاح' : 'Image uploaded successfully', 'success');
     } catch (error: any) {
       showToast(error.message || 'فشل رفع الصورة', 'error');
     } finally {
       setUploadingImage(false);
+      // نصفّر قيمة الـ input عشان يسمح برفع نفس الملف تاني لو حبّ المستخدم
+      e.target.value = '';
     }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImageUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleOpenAddModal = (product: any = null) => {
@@ -112,9 +120,17 @@ export function AdminProductsPage() {
         price: product.price?.toString() || '',
         stock_quantity: product.stock_quantity?.toString() || '',
         packaging: product.packaging || '',
-        image_url: product.image_url || '',
         description: product.description || '',
       });
+
+      // لو المنتج عنده image_urls (متعدد) نستخدمها، وإلا نرجع لـ image_url القديمة كصورة وحيدة
+      if (Array.isArray(product.image_urls) && product.image_urls.length > 0) {
+        setImageUrls(product.image_urls);
+      } else if (product.image_url) {
+        setImageUrls([product.image_url]);
+      } else {
+        setImageUrls([]);
+      }
     } else {
       setEditingProduct(null);
       setFormData({
@@ -123,9 +139,9 @@ export function AdminProductsPage() {
         price: '',
         stock_quantity: '',
         packaging: '',
-        image_url: '',
         description: '',
       });
+      setImageUrls([]);
     }
     setIsAddModalOpen(true);
   };
@@ -141,7 +157,9 @@ export function AdminProductsPage() {
       price: parseFloat(formData.price) || 0,
       stock_quantity: parseInt(formData.stock_quantity) || 0,
       packaging: formData.packaging,
-      image_url: formData.image_url,
+      // نحتفظ بـ image_url (أول صورة) عشان أي كود قديم لسه بيعتمد عليها يفضل شغال
+      image_url: imageUrls[0] || '',
+      image_urls: imageUrls,
       description: formData.description, // إرسال الوصف لقاعدة البيانات
     };
 
@@ -306,6 +324,11 @@ export function AdminProductsPage() {
                       <Package className="w-12 h-12 text-gray-300" />
                     )}
                     <div className="absolute top-3 right-3">{stockBadge}</div>
+                    {Array.isArray(product.image_urls) && product.image_urls.length > 1 && (
+                      <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        {product.image_urls.length} صور
+                      </div>
+                    )}
                   </div>
                   <div className="p-4 space-y-2">
                     <h3 className="font-bold text-gray-900 text-sm line-clamp-1">{productName}</h3>
@@ -431,22 +454,43 @@ export function AdminProductsPage() {
                 </div>
               </div>
 
+              {/* صور المنتج — بقت تدعم رفع أكتر من صورة */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">صورة المنتج</label>
-                <div className="flex items-center gap-3">
-                  <label className="flex-1 flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 hover:border-primary-500 rounded-2xl cursor-pointer bg-gray-50 transition-all">
-                    <Upload className="w-5 h-5 text-gray-400 mb-1" />
-                    <span className="text-[11px] text-gray-500 font-bold">
-                      {uploadingImage ? 'جاري الرفع...' : 'اضغط لاختيار صورة من جهازك'}
-                    </span>
-                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                  </label>
-                  {formData.image_url && (
-                    <div className="w-16 h-16 rounded-2xl border border-gray-200 overflow-hidden flex-shrink-0 bg-gray-100">
-                      <img src={formData.image_url} alt="Uploaded" className="w-full h-full object-cover" />
-                    </div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-gray-700">صور المنتج ({imageUrls.length})</label>
+                  {imageUrls.length > 0 && (
+                    <span className="text-[10px] text-gray-400">الصورة الأولى هي الرئيسية</span>
                   )}
                 </div>
+
+                {/* معاينة الصور المرفوعة مع إمكانية الحذف */}
+                {imageUrls.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {imageUrls.map((url, index) => (
+                      <div key={index} className="relative w-16 h-16 rounded-2xl border border-gray-200 overflow-hidden flex-shrink-0 bg-gray-100 group/img">
+                        <img src={url} alt={`Product ${index + 1}`} className="w-full h-full object-cover" />
+                        {index === 0 && (
+                          <span className="absolute top-0.5 start-0.5 bg-primary-600 text-white text-[8px] font-bold px-1 rounded">رئيسية</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(index)}
+                          className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 hover:border-primary-500 rounded-2xl cursor-pointer bg-gray-50 transition-all">
+                  <Upload className="w-5 h-5 text-gray-400 mb-1" />
+                  <span className="text-[11px] text-gray-500 font-bold">
+                    {uploadingImage ? 'جاري الرفع...' : 'اضغط لإضافة صورة من جهازك'}
+                  </span>
+                  <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} className="hidden" />
+                </label>
               </div>
 
               <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">

@@ -10,7 +10,17 @@ import { ProductCardSkeleton } from '@/components/ui/Skeleton';
 import { QuantitySelector } from '@/components/ui/QuantitySelector';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
-import { ArrowLeft, ShoppingBag, Package, Check, Truck, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, ShoppingBag, Package, Check, Truck, ShieldCheck } from 'lucide-react';
+import type { Product } from '@/types';
+
+// يرجع مصفوفة الصور: يفضّل image_urls (متعدد) لو موجود، وإلا يرجع للصورة الواحدة القديمة image_url
+function getProductImages(product: Product): string[] {
+  const multiple = (product as any).image_urls;
+  if (Array.isArray(multiple) && multiple.length > 0) {
+    return multiple.filter(Boolean);
+  }
+  return product.image_url ? [product.image_url] : [];
+}
 
 export function ProductDetailPage() {
   const { id } = useParams();
@@ -20,6 +30,7 @@ export function ProductDetailPage() {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [qty, setQty] = useState(1);
+  const [activeImage, setActiveImage] = useState(0);
 
   const { products: related, loading: relLoading } = useProducts(
     product?.category_id ? undefined : undefined
@@ -70,6 +81,7 @@ export function ProductDetailPage() {
   const price = getPricingForQuantity(product, qty);
   const total = price * qty;
   const tiers = [...(product.pricing_tiers || [])].sort((a, b) => a.min_quantity - b.min_quantity);
+  const images = getProductImages(product);
 
   const relatedProducts = related
     .filter(p => p.id !== product.id && p.category_id === product.category_id)
@@ -95,6 +107,14 @@ export function ProductDetailPage() {
     navigate('/cart');
   };
 
+  const handlePrevImage = () => {
+    setActiveImage((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = () => {
+    setActiveImage((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
       {/* Breadcrumb */}
@@ -105,7 +125,7 @@ export function ProductDetailPage() {
         {product.category && (
           <>
             <span>/</span>
-            <Link to={`/products?category=${product.category.slug}`} className="hover:text-primary-600">
+            <Link to={`/products?category=${product.category.id}`} className="hover:text-primary-600">
               {lang === 'ar' ? product.category.name_ar : product.category.name_en}
             </Link>
           </>
@@ -115,39 +135,94 @@ export function ProductDetailPage() {
       <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
         {/* Image */}
         <div className="relative">
-          <div className="aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50 shadow-card">
-            {product.image_url ? (
-              <img src={product.image_url} alt={name} className="w-full h-full object-cover" />
+          <div className="aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50 shadow-card relative">
+            {images.length > 0 ? (
+              <img src={images[activeImage] || images[0]} alt={name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-primary-200">
                 <Package className="w-24 h-24" />
               </div>
             )}
+
+            {/* أسهم التنقل بين الصور — تظهر فقط لو فيه أكتر من صورة واحدة */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevImage}
+                  className="absolute start-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center text-gray-700 hover:bg-white transition-all cursor-pointer"
+                  aria-label="Previous image"
+                >
+                  <ChevronRight className="w-5 h-5 rtl:hidden" />
+                  <ChevronLeft className="w-5 h-5 hidden rtl:block" />
+                </button>
+                <button
+                  onClick={handleNextImage}
+                  className="absolute end-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center text-gray-700 hover:bg-white transition-all cursor-pointer"
+                  aria-label="Next image"
+                >
+                  <ChevronLeft className="w-5 h-5 rtl:hidden" />
+                  <ChevronRight className="w-5 h-5 hidden rtl:block" />
+                </button>
+
+                {/* نقط أسفل الصورة */}
+                <div className="absolute bottom-3 inset-x-0 flex items-center justify-center gap-1.5 z-10">
+                  {images.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImage(idx)}
+                      className={`rounded-full transition-all cursor-pointer ${
+                        idx === activeImage
+                          ? 'w-5 h-2 bg-white shadow-sm'
+                          : 'w-2 h-2 bg-white/60 hover:bg-white/80'
+                      }`}
+                      aria-label={`Image ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Stock badge */}
+            <div className="absolute top-4 start-4">
+              {stockStatus === 'out' ? (
+                <span className="px-3 py-1.5 text-sm font-semibold rounded-full bg-error-500 text-white shadow-sm">
+                  {t('outOfStock')}
+                </span>
+              ) : stockStatus === 'low' ? (
+                <span className="px-3 py-1.5 text-sm font-semibold rounded-full bg-warning-500 text-white shadow-sm">
+                  {t('lowStock')} — {t('onlyLeft', { count: available })}
+                </span>
+              ) : (
+                <span className="px-3 py-1.5 text-sm font-semibold rounded-full bg-success-500 text-white shadow-sm">
+                  {t('inStock')} — {available} {t('units')}
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Stock badge */}
-          <div className="absolute top-4 start-4">
-            {stockStatus === 'out' ? (
-              <span className="px-3 py-1.5 text-sm font-semibold rounded-full bg-error-500 text-white shadow-sm">
-                {t('outOfStock')}
-              </span>
-            ) : stockStatus === 'low' ? (
-              <span className="px-3 py-1.5 text-sm font-semibold rounded-full bg-warning-500 text-white shadow-sm">
-                {t('lowStock')} — {t('onlyLeft', { count: available })}
-              </span>
-            ) : (
-              <span className="px-3 py-1.5 text-sm font-semibold rounded-full bg-success-500 text-white shadow-sm">
-                {t('inStock')} — {available} {t('units')}
-              </span>
-            )}
-          </div>
+          {/* صور مصغّرة (thumbnails) أسفل الصورة الرئيسية — تظهر فقط لو فيه أكتر من صورة واحدة */}
+          {images.length > 1 && (
+            <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImage(idx)}
+                  className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                    idx === activeImage ? 'border-primary-500' : 'border-transparent opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt={`${name} ${idx + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Details */}
         <div className="flex flex-col">
           {product.category && (
             <Link
-              to={`/products?category=${product.category.slug}`}
+              to={`/products?category=${product.category.id}`}
               className="inline-block text-sm font-semibold text-primary-600 hover:text-primary-700 mb-2"
             >
               {lang === 'ar' ? product.category.name_ar : product.category.name_en}
