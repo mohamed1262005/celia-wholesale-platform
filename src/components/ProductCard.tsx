@@ -6,10 +6,22 @@ import { useToast } from '@/contexts/ToastContext';
 import type { Product } from '@/types';
 import { getPricingForQuantity, getAvailableStock, getStockStatus } from '@/lib/pricing';
 import { QuantitySelector } from '@/components/ui/QuantitySelector';
-import { ShoppingBag, Eye, PackageX } from 'lucide-react';
+import { ShoppingBag, Eye, PackageX, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
+}
+
+// دالة آمنة لجلب مصفوفة الصور من قاعدة البيانات (سواء كانت image_urls أو images أو image_url)
+function getProductImages(product: Product): string[] {
+  const p = product as any;
+  if (Array.isArray(p.images) && p.images.length > 0) {
+    return p.images.filter(Boolean);
+  }
+  if (Array.isArray(p.image_urls) && p.image_urls.length > 0) {
+    return p.image_urls.filter(Boolean);
+  }
+  return p.image_url ? [p.image_url] : [];
 }
 
 export function ProductCard({ product }: ProductCardProps) {
@@ -18,9 +30,24 @@ export function ProductCard({ product }: ProductCardProps) {
   const { showToast } = useToast();
   const [qty, setQty] = useState(1);
   const [showQuickView, setShowQuickView] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const name = lang === 'ar' ? ((product as any).name_ar || product.name) : ((product as any).name_en || product.name);
   const description = (product as any).description || (product as any).description_ar || (product as any).description_en;
+
+  const images = getProductImages(product);
+
+  const nextImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
 
   const available = getAvailableStock(product);
   const stockStatus = getStockStatus(product);
@@ -42,23 +69,30 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <>
       <div className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
-        {/* Image */}
-        <Link to={`/products/${product.id}`} className="relative aspect-square overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50 block">
-          {product.image_url ? (
-            <img
-              src={product.image_url}
-              alt={name || 'Product'}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              loading="lazy"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-primary-200">
-              <PackageX className="w-12 h-12 sm:w-16 sm:h-16" />
-            </div>
-          )}
+        {/* Image Container */}
+        <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50 block">
+          <Link to={`/products/${product.id}`} className="absolute inset-0 block w-full h-full">
+            {images.length > 0 ? (
+              images.map((img: string, idx: number) => (
+                <img
+                  key={idx}
+                  src={img}
+                  alt={name || 'Product'}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                    currentImageIndex === idx ? 'opacity-100 z-1' : 'opacity-0 z-0 pointer-events-none'
+                  }`}
+                  loading="lazy"
+                />
+              ))
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-primary-200">
+                <PackageX className="w-12 h-12 sm:w-16 sm:h-16" />
+              </div>
+            )}
+          </Link>
 
           {/* Stock badge */}
-          <div className="absolute top-2 start-2">
+          <div className="absolute top-2 start-2 z-20">
             {stockStatus === 'out' ? (
               <span className="px-2 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full bg-error-500 text-white shadow-sm">
                 {t('outOfStock')}
@@ -73,11 +107,36 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Quick view button */}
           <button
             onClick={(e) => { e.preventDefault(); setShowQuickView(true); }}
-            className="absolute top-2 end-2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm cursor-pointer"
+            className="absolute top-2 end-2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm cursor-pointer z-20"
           >
             <Eye className="w-4 h-4" />
           </button>
-        </Link>
+
+          {/* أسهم التنقل والعداد لا تظهر إلا إذا كان هناك أكثر من صورة حقيقية */}
+          {images.length > 1 && (
+            <div className="absolute inset-x-0 bottom-2 flex items-center justify-between px-3 z-20 pointer-events-none">
+              <button
+                onClick={prevImage}
+                className="w-7 h-7 rounded-full bg-white/95 text-gray-900 shadow-md flex items-center justify-center hover:bg-white hover:scale-105 transition-all pointer-events-auto cursor-pointer flex-shrink-0"
+                aria-label="Previous Image"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              
+              <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-black/60 text-white rounded-full backdrop-blur-xs pointer-events-none flex-shrink-0">
+                {currentImageIndex + 1} / {images.length}
+              </span>
+
+              <button
+                onClick={nextImage}
+                className="w-7 h-7 rounded-full bg-white/95 text-gray-900 shadow-md flex items-center justify-center hover:bg-white hover:scale-105 transition-all pointer-events-auto cursor-pointer flex-shrink-0"
+                aria-label="Next Image"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Content */}
         <div className="p-2.5 sm:p-4 flex flex-col flex-1 justify-between">
@@ -104,12 +163,11 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
           </div>
 
-          {/* Quantity + Add to cart (بارزة وواضحة جداً للموبايل) */}
+          {/* Quantity + Add to cart */}
           <div className="mt-3 pt-2 border-t border-gray-50">
             {stockStatus !== 'out' ? (
               <div className="space-y-2">
-                <div className="flex items-center justify-between bg-gray-50 px-2 py-1.5 rounded-xl border border-gray-200/60">
-                  <span className="text-[11px] font-semibold text-gray-600">{t('quantity') || 'الكمية'}:</span>
+                <div className="flex justify-center">
                   <QuantitySelector value={qty} onChange={setQty} max={available} min={1} size="sm" />
                 </div>
 
@@ -149,9 +207,12 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
   const { addToCart } = useCart();
   const { showToast } = useToast();
   const [qty, setQty] = useState(1);
+  const [modalImageIndex, setModalImageIndex] = useState(0);
 
   const name = lang === 'ar' ? ((product as any).name_ar || product.name) : ((product as any).name_en || product.name);
   const description = (product as any).description || (product as any).description_ar || (product as any).description_en;
+
+  const images = getProductImages(product);
 
   const available = getAvailableStock(product);
   const stockStatus = getStockStatus(product);
@@ -175,12 +236,41 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
       <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" />
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col md:flex-row animate-scale-in" onClick={e => e.stopPropagation()}>
-        <div className="md:w-1/2 aspect-square bg-gradient-to-br from-primary-50 to-secondary-50 overflow-hidden">
-          {product.image_url ? (
-            <img src={product.image_url} alt={name || 'Product'} className="w-full h-full object-cover" />
+        <div className="md:w-1/2 aspect-square bg-gradient-to-br from-primary-50 to-secondary-50 overflow-hidden relative">
+          {images.length > 0 ? (
+            images.map((img: string, idx: number) => (
+              <img
+                key={idx}
+                src={img}
+                alt={name || 'Product'}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                  modalImageIndex === idx ? 'opacity-100 z-1' : 'opacity-0 z-0'
+                }`}
+              />
+            ))
           ) : (
             <div className="w-full h-full flex items-center justify-center text-primary-200">
               <PackageX className="w-20 h-20" />
+            </div>
+          )}
+
+          {images.length > 1 && (
+            <div className="absolute inset-x-0 bottom-2 flex items-center justify-between px-3 z-20">
+              <button
+                onClick={() => setModalImageIndex((prev) => (prev - 1 + images.length) % images.length)}
+                className="w-8 h-8 rounded-full bg-white/95 text-gray-900 shadow-md flex items-center justify-center hover:bg-white"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-black/60 text-white rounded-full">
+                {modalImageIndex + 1} / {images.length}
+              </span>
+              <button
+                onClick={() => setModalImageIndex((prev) => (prev + 1) % images.length)}
+                className="w-8 h-8 rounded-full bg-white/95 text-gray-900 shadow-md flex items-center justify-center hover:bg-white"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
             </div>
           )}
         </div>

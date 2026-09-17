@@ -92,7 +92,22 @@ export function AdminProductFormPage() {
           : isEditing ? 'Product updated successfully' : 'Product added successfully',
         'success'
       );
-      navigate('/admin/products');
+
+      // إذا كنا بنعدل منتج، فنحن نحتاج للرجوع للقائمة بعد التعديل
+      if (isEditing) {
+        navigate('/admin/products');
+      } else {
+        // إذا كنا نضيف منتج جديد، نفرغ النموذج لنستمر بإضافة منتج آخر وتظل الصفحة ثابتة
+        setFormData({
+          name_ar: '',
+          name_en: '',
+          category_id: '',
+          price: '',
+          stock_quantity: '',
+          packaging: '',
+          image_url: '',
+        });
+      }
     }
   };
 

@@ -3,7 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { formatPrice } from '@/lib/pricing';
-import { Plus, Search, QrCode, Edit, Trash2, Package, AlertTriangle, CheckCircle, XCircle, X, Upload } from 'lucide-react';
+import { Plus, Search, QrCode, Edit, Trash2, Package, AlertTriangle, CheckCircle, XCircle, X, Upload, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BarcodeScannerModal } from '@/components/admin/BarcodeScannerModal';
 
@@ -24,11 +24,12 @@ export function AdminProductsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  // حقول النموذج (تمت إضافة description هنا)
+  // حقول النموذج (مضاف إليها description و compare_at_price للعروض)
   const [formData, setFormData] = useState({
     name_ar: '',
     category_id: '',
     price: '',
+    compare_at_price: '', // السعر القديم قبل الخصم للعروض
     stock_quantity: '',
     packaging: '',
     description: '',
@@ -102,7 +103,6 @@ export function AdminProductsPage() {
       showToast(error.message || 'فشل رفع الصورة', 'error');
     } finally {
       setUploadingImage(false);
-      // نصفّر قيمة الـ input عشان يسمح برفع نفس الملف تاني لو حبّ المستخدم
       e.target.value = '';
     }
   };
@@ -118,12 +118,12 @@ export function AdminProductsPage() {
         name_ar: product.name_ar || product.name || '',
         category_id: product.category_id || categories[0]?.id || '',
         price: product.price?.toString() || '',
+        compare_at_price: product.compare_at_price?.toString() || '',
         stock_quantity: product.stock_quantity?.toString() || '',
         packaging: product.packaging || '',
         description: product.description || '',
       });
 
-      // لو المنتج عنده image_urls (متعدد) نستخدمها، وإلا نرجع لـ image_url القديمة كصورة وحيدة
       if (Array.isArray(product.image_urls) && product.image_urls.length > 0) {
         setImageUrls(product.image_urls);
       } else if (product.image_url) {
@@ -137,6 +137,7 @@ export function AdminProductsPage() {
         name_ar: '',
         category_id: categories[0]?.id || '',
         price: '',
+        compare_at_price: '',
         stock_quantity: '',
         packaging: '',
         description: '',
@@ -155,12 +156,12 @@ export function AdminProductsPage() {
       name_en: formData.name_ar, 
       category_id: formData.category_id || null,
       price: parseFloat(formData.price) || 0,
+      compare_at_price: formData.compare_at_price ? parseFloat(formData.compare_at_price) : null,
       stock_quantity: parseInt(formData.stock_quantity) || 0,
       packaging: formData.packaging,
-      // نحتفظ بـ image_url (أول صورة) عشان أي كود قديم لسه بيعتمد عليها يفضل شغال
       image_url: imageUrls[0] || '',
       image_urls: imageUrls,
-      description: formData.description, // إرسال الوصف لقاعدة البيانات
+      description: formData.description,
     };
 
     let error;
@@ -178,7 +179,22 @@ export function AdminProductsPage() {
       showToast(error.message, 'error');
     } else {
       showToast(lang === 'ar' ? (editingProduct ? 'تم تحديث المنتج بنجاح' : 'تم إضافة المنتج بنجاح') : 'Saved successfully', 'success');
-      setIsAddModalOpen(false);
+      
+      // إذا كنا بنعدل منتج، نقفل النافذة ونرجع للقائمة. لو بنضيف منتج جديد، نفرغ النموذج ونترك النافذة مفتوحة لإضافة منتج آخر كما طلبتم.
+      if (editingProduct) {
+        setIsAddModalOpen(false);
+      } else {
+        setFormData({
+          name_ar: '',
+          category_id: categories[0]?.id || '',
+          price: '',
+          compare_at_price: '',
+          stock_quantity: '',
+          packaging: '',
+          description: '',
+        });
+        setImageUrls([]);
+      }
       fetchData();
     }
   };
@@ -306,6 +322,8 @@ export function AdminProductsPage() {
             const productName = lang === 'ar' ? (product.name_ar || product.name) : (product.name_en || product.name);
             const stockQty = Number(product.stock_quantity ?? 0);
             const productPrice = Number(product.price ?? 0);
+            const comparePrice = product.compare_at_price ? Number(product.compare_at_price) : 0;
+            const hasDiscount = comparePrice > productPrice;
 
             let stockBadge = <span className="bg-emerald-500 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold">متوفر ({stockQty})</span>;
             if (stockQty <= 0) {
@@ -324,6 +342,14 @@ export function AdminProductsPage() {
                       <Package className="w-12 h-12 text-gray-300" />
                     )}
                     <div className="absolute top-3 right-3">{stockBadge}</div>
+                    
+                    {/* شارة العرض الخاص على الكارد */}
+                    {hasDiscount && (
+                      <div className="absolute top-3 left-3 bg-pink-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-sm">
+                        عرض خاص
+                      </div>
+                    )}
+
                     {Array.isArray(product.image_urls) && product.image_urls.length > 1 && (
                       <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                         {product.image_urls.length} صور
@@ -337,9 +363,16 @@ export function AdminProductsPage() {
                     )}
                     <div className="flex items-center justify-between pt-1">
                       <span className="text-xs text-gray-400">السعر:</span>
-                      <span className="font-mono font-extrabold text-primary-600 text-sm">
-                        {formatPrice(productPrice, t('currency'))}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {hasDiscount && (
+                          <span className="font-mono text-xs text-gray-400 line-through">
+                            {formatPrice(comparePrice, t('currency'))}
+                          </span>
+                        )}
+                        <span className="font-mono font-extrabold text-primary-600 text-sm">
+                          {formatPrice(productPrice, t('currency'))}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -392,7 +425,6 @@ export function AdminProductsPage() {
                 />
               </div>
 
-              {/* حقل الوصف والمواصفات الجديد */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">وصف المنتج / المواصفات</label>
                 <textarea
@@ -430,7 +462,7 @@ export function AdminProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">السعر (جنيه) *</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">سعر البيع (جنيه) *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -441,7 +473,24 @@ export function AdminProductsPage() {
                     placeholder="0.00"
                   />
                 </div>
+                
+                {/* حقل السعر قبل الخصم (العرض) الجديد */}
                 <div>
+                  <label className="block text-xs font-bold text-pink-600 mb-1 flex items-center gap-1">
+                    <Tag className="w-3.5 h-3.5" />
+                    <span>السعر قبل الخصم (اختياري)</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.compare_at_price}
+                    onChange={(e) => setFormData({ ...formData, compare_at_price: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl border border-pink-200 bg-pink-50/20 text-xs font-medium font-mono"
+                    placeholder="السعر القديم المشطوب"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-gray-700 mb-1">كمية المخزون *</label>
                   <input
                     type="number"
@@ -454,7 +503,7 @@ export function AdminProductsPage() {
                 </div>
               </div>
 
-              {/* صور المنتج — بقت تدعم رفع أكتر من صورة */}
+              {/* صور المنتج */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-bold text-gray-700">صور المنتج ({imageUrls.length})</label>
@@ -463,7 +512,6 @@ export function AdminProductsPage() {
                   )}
                 </div>
 
-                {/* معاينة الصور المرفوعة مع إمكانية الحذف */}
                 {imageUrls.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-3">
                     {imageUrls.map((url, index) => (
@@ -516,7 +564,7 @@ export function AdminProductsPage() {
         onClose={() => setIsScanModalOpen(false)} 
         onSuccess={(msg) => {
           showToast(msg, 'success');
-          fetchData(); // تحديث القائمة فوراً
+          fetchData();
         }} 
       />
     </div>

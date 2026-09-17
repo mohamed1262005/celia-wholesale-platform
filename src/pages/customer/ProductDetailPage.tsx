@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProduct, useProducts } from '@/hooks/useData';
@@ -31,6 +31,11 @@ export function ProductDetailPage() {
   const navigate = useNavigate();
   const [qty, setQty] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
+
+  // إجبار الصفحة على البدء من أعلى عند فتح المنتج أو تغيره لعدم البدء من الأسفل
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [id]);
 
   const { products: related, loading: relLoading } = useProducts(
     product?.category_id ? undefined : undefined
@@ -314,11 +319,11 @@ export function ProductDetailPage() {
           <div className="mt-5 grid grid-cols-2 gap-3">
             <div className="flex items-center gap-2.5 p-3 bg-gray-50 rounded-xl">
               <Truck className="w-5 h-5 text-secondary-500 flex-shrink-0" />
-              <span className="text-xs font-medium text-gray-600">{lang === 'ar' ? 'توصيل سريع' : 'Fast Delivery'}</span>
+              <span className="text-xs font-medium text-gray-600">توصيل سريع</span>
             </div>
             <div className="flex items-center gap-2.5 p-3 bg-gray-50 rounded-xl">
               <ShieldCheck className="w-5 h-5 text-secondary-500 flex-shrink-0" />
-              <span className="text-xs font-medium text-gray-600">{lang === 'ar' ? 'جودة مضمونة' : 'Quality Assured'}</span>
+              <span className="text-xs font-medium text-gray-600">جودة مضمونة</span>
             </div>
           </div>
         </div>
@@ -342,3 +347,5 @@ export function ProductDetailPage() {
     </div>
   );
 }
+
+export default ProductDetailPage;

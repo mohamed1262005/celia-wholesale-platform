@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +13,11 @@ export function HomePage() {
   const { isAdmin } = useAuth();
   const { categories, loading: catLoading } = useCategories();
   const { products, loading: prodLoading } = useProducts({ sort: 'newest' });
+
+  // إجبار الصفحة الرئيسية على البدء من أعلى عند فتحها
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   const featuredProducts = products.slice(0, 8);
   const popularProducts = products.slice(4, 12);

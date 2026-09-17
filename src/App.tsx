@@ -40,8 +40,14 @@ import { AdminReportsPage } from '@/pages/admin/AdminReportsPage';
 import { AdminNotificationsPage } from '@/pages/admin/AdminNotificationsPage';
 
 function ScrollToTop() {
-  const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'instant' // إرجاع الصفحة لأعلى فوراً وبدون تأخير
+    });
+  }, [pathname, search]);
   return null;
 }
 
@@ -68,50 +74,47 @@ function ProtectedCustomerRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   return (
-    <>
-      <ScrollToTop />
-      <Routes>
-        {/* Auth routes (no navbar/footer & accessible to guests) */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+    <Routes>
+      {/* Auth routes (no navbar/footer & accessible to guests) */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-        {/* Protected Customer routes (Requires login) */}
-        <Route path="/" element={<ProtectedCustomerRoute><HomePage /></ProtectedCustomerRoute>} />
-        <Route path="/products" element={<ProtectedCustomerRoute><ProductsPage /></ProtectedCustomerRoute>} />
-        <Route path="/products/:id" element={<ProtectedCustomerRoute><ProductDetailPage /></ProtectedCustomerRoute>} />
-        <Route path="/categories" element={<ProtectedCustomerRoute><CategoriesPage /></ProtectedCustomerRoute>} />
-        <Route path="/cart" element={<ProtectedCustomerRoute><CartPage /></ProtectedCustomerRoute>} />
-        <Route path="/checkout" element={<ProtectedCustomerRoute><CheckoutPage /></ProtectedCustomerRoute>} />
-        <Route path="/confirmation/:id" element={<ProtectedCustomerRoute><ConfirmationPage /></ProtectedCustomerRoute>} />
-        <Route path="/orders" element={<ProtectedCustomerRoute><MyOrdersPage /></ProtectedCustomerRoute>} />
-        <Route path="/orders/:id" element={<ProtectedCustomerRoute><OrderDetailPage /></ProtectedCustomerRoute>} />
-        <Route path="/notifications" element={<ProtectedCustomerRoute><NotificationsPage /></ProtectedCustomerRoute>} />
-        <Route path="/profile" element={<ProtectedCustomerRoute><ProfilePage /></ProtectedCustomerRoute>} />
+      {/* Protected Customer routes (Requires login) */}
+      <Route path="/" element={<ProtectedCustomerRoute><HomePage /></ProtectedCustomerRoute>} />
+      <Route path="/products" element={<ProtectedCustomerRoute><ProductsPage /></ProtectedCustomerRoute>} />
+      <Route path="/products/:id" element={<ProtectedCustomerRoute><ProductDetailPage /></ProtectedCustomerRoute>} />
+      <Route path="/categories" element={<ProtectedCustomerRoute><CategoriesPage /></ProtectedCustomerRoute>} />
+      <Route path="/cart" element={<ProtectedCustomerRoute><CartPage /></ProtectedCustomerRoute>} />
+      <Route path="/checkout" element={<ProtectedCustomerRoute><CheckoutPage /></ProtectedCustomerRoute>} />
+      <Route path="/confirmation/:id" element={<ProtectedCustomerRoute><ConfirmationPage /></ProtectedCustomerRoute>} />
+      <Route path="/orders" element={<ProtectedCustomerRoute><MyOrdersPage /></ProtectedCustomerRoute>} />
+      <Route path="/orders/:id" element={<ProtectedCustomerRoute><OrderDetailPage /></ProtectedCustomerRoute>} />
+      <Route path="/notifications" element={<ProtectedCustomerRoute><NotificationsPage /></ProtectedCustomerRoute>} />
+      <Route path="/profile" element={<ProtectedCustomerRoute><ProfilePage /></ProtectedCustomerRoute>} />
 
-        {/* Admin routes */}
-        <Route path="/admin" element={
-          <AdminRoute><AdminLayout /></AdminRoute>
-        }>
-          <Route index element={<DashboardPage />} />
-          <Route path="orders" element={<AdminOrdersPage />} />
-          <Route path="products" element={<AdminProductsPage />} />
-          <Route path="products/new" element={<AdminProductFormPage />} />
-          <Route path="products/:id/edit" element={<AdminProductFormPage />} />
-          <Route path="categories" element={<AdminCategoriesPage />} />
-          <Route path="categories/new" element={<AdminCategoryFormPage />} />
-          <Route path="categories/:id/edit" element={<AdminCategoryFormPage />} />
-          <Route path="inventory" element={<AdminInventoryPage />} />
-          <Route path="pricing" element={<AdminPricingPage />} />
-          <Route path="customers" element={<AdminCustomersPage />} />
-          <Route path="reports" element={<AdminReportsPage />} />
-          <Route path="notifications" element={<AdminNotificationsPage />} />
-        </Route>
+      {/* Admin routes */}
+      <Route path="/admin" element={
+        <AdminRoute><AdminLayout /></AdminRoute>
+      }>
+        <Route index element={<DashboardPage />} />
+        <Route path="orders" element={<AdminOrdersPage />} />
+        <Route path="products" element={<AdminProductsPage />} />
+        <Route path="products/new" element={<AdminProductFormPage />} />
+        <Route path="products/:id/edit" element={<AdminProductFormPage />} />
+        <Route path="categories" element={<AdminCategoriesPage />} />
+        <Route path="categories/new" element={<AdminCategoryFormPage />} />
+        <Route path="categories/:id/edit" element={<AdminCategoryFormPage />} />
+        <Route path="inventory" element={<AdminInventoryPage />} />
+        <Route path="pricing" element={<AdminPricingPage />} />
+        <Route path="customers" element={<AdminCustomersPage />} />
+        <Route path="reports" element={<AdminReportsPage />} />
+        <Route path="notifications" element={<AdminNotificationsPage />} />
+      </Route>
 
-        {/* Fallback */}
-        <Route path="*" element={<ProtectedCustomerRoute><HomePage /></ProtectedCustomerRoute>} />
-      </Routes>
-    </>
+      {/* Fallback */}
+      <Route path="*" element={<ProtectedCustomerRoute><HomePage /></ProtectedCustomerRoute>} />
+    </Routes>
   );
 }
 
@@ -122,6 +125,7 @@ function App() {
         <AuthProvider>
           <CartProvider>
             <BrowserRouter>
+              <ScrollToTop />
               <AppRoutes />
               <ToastContainer />
             </BrowserRouter>
