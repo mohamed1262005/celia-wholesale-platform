@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getAvailableStock } from '@/lib/pricing';
 import type { Category, Product, Order, AppNotification } from '@/types';
@@ -55,6 +55,13 @@ export function useProducts(filters?: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // استخراج القيم النصية بشكل آمن لمنع تكرار الـ loops بسبب كائنات الـ filters
+  const categoryId = filters?.categoryId;
+  const categorySlug = filters?.categorySlug;
+  const search = filters?.search;
+  const availability = filters?.availability;
+  const sort = filters?.sort;
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -67,7 +74,7 @@ export function useProducts(filters?: {
         pricing_tiers (*)
       `);
 
-    if (filters?.sort === 'name') {
+    if (sort === 'name') {
       query = query.order('name_ar', { ascending: true });
     } else {
       query = query.order('id', { ascending: false });
@@ -81,38 +88,38 @@ export function useProducts(filters?: {
     } else {
       let result = (data as Product[]) || [];
 
-      if (filters?.categoryId) {
+      if (categoryId) {
         result = result.filter((p: any) => {
           const cat = p.categories || p.category;
           return (
-            p.category_id === filters.categoryId || 
-            cat?.id === filters.categoryId || 
-            cat?.slug === filters.categoryId
+            p.category_id === categoryId || 
+            cat?.id === categoryId || 
+            cat?.slug === categoryId
           );
         });
-      } else if (filters?.categorySlug) {
+      } else if (categorySlug) {
         result = result.filter((p: any) => {
           const cat = p.categories || p.category;
-          return cat?.slug === filters.categorySlug;
+          return cat?.slug === categorySlug;
         });
       }
 
-      if (filters?.search) {
-        const q = filters.search.toLowerCase();
+      if (search) {
+        const q = search.toLowerCase();
         result = result.filter(p =>
           (p.name_en || '').toLowerCase().includes(q) ||
           (p.name_ar || '').toLowerCase().includes(q)
         );
       }
 
-      if (filters?.availability === 'available') {
+      if (availability === 'available') {
         result = result.filter((p) => getAvailableStock(p) > 0);
       }
 
       setProducts(result);
     }
     setLoading(false);
-  }, [filters?.categoryId, filters?.categorySlug, filters?.search, filters?.availability, filters?.sort]);
+  }, [categoryId, categorySlug, search, availability, sort]);
 
   useEffect(() => { load(); }, [load]);
   return { products, loading, error, reload: load };

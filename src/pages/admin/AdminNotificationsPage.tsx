@@ -46,14 +46,22 @@ export function AdminNotificationsPage() {
     }
 
     setSending(true);
+    // ضبط نوع الإشعار ليصبح مخصصاً للعملاء (customer) ليظهر في قائمة إشعاراتهم بوضوح
     const { error } = await supabase.from('notifications').insert([
-      { title, message, type: 'admin_broadcast', created_at: new Date() }
+      { 
+        title, 
+        message, 
+        type: 'customer', 
+        user_id: null, // مخصص لجميع العملاء
+        is_read: false,
+        created_at: new Date() 
+      }
     ]);
 
     if (error) {
       showToast(error.message, 'error');
     } else {
-      showToast(lang === 'ar' ? 'تم إرسال الإشعار بنجاح' : 'Notification sent successfully', 'success');
+      showToast(lang === 'ar' ? 'تم إرسال الإشعار للعملاء بنجاح' : 'Notification sent to customers successfully', 'success');
       setTitle('');
       setMessage('');
       setShowModal(false);
@@ -73,7 +81,7 @@ export function AdminNotificationsPage() {
   };
 
   const filteredNotifications = notifications.filter(n => {
-    if (activeTab === 'system') return n.type === 'system';
+    if (activeTab === 'system') return n.type === 'system' || n.type === 'admin_broadcast';
     if (activeTab === 'customer') return n.type === 'customer';
     return true;
   });
@@ -81,7 +89,7 @@ export function AdminNotificationsPage() {
   const totalCount = notifications.length;
 
   return (
-    <div className="w-full px-8 py-8 pb-32 space-y-6">
+    <div className="w-full px-8 py-8 pb-32 space-y-6" dir="rtl">
       {/* 1. Header with Gradient Background */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-pink-50/70 via-purple-50/50 to-white rounded-3xl border border-pink-100/80 shadow-sm p-8 transition-all duration-300 hover:scale-[1.01]">
         <div>
@@ -99,7 +107,7 @@ export function AdminNotificationsPage() {
           className="px-6 py-3 bg-gradient-to-r from-primary-500 to-pink-600 hover:from-primary-600 hover:to-pink-700 text-white rounded-2xl text-sm font-bold transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] shadow-md shadow-primary-500/25 inline-flex items-center gap-2 cursor-pointer"
         >
           <Send className="w-4 h-4" />
-          <span>{lang === 'ar' ? 'إرسال إشعار جديد' : 'Send Notification'}</span>
+          <span>{lang === 'ar' ? 'إرسال إشعار للعملاء' : 'Send Notification'}</span>
         </button>
       </div>
 
@@ -181,7 +189,12 @@ export function AdminNotificationsPage() {
                   <Bell className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-gray-900 text-sm">{notif.title}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-extrabold text-gray-900 text-sm">{notif.title}</h3>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${notif.type === 'customer' ? 'bg-purple-50 text-purple-600 border border-purple-100' : 'bg-gray-100 text-gray-600'}`}>
+                      {notif.type === 'customer' ? 'إشعار عملاء' : 'النظام'}
+                    </span>
+                  </div>
                   <p className="text-xs text-gray-500 mt-1">{notif.message}</p>
                 </div>
               </div>
@@ -203,7 +216,7 @@ export function AdminNotificationsPage() {
           <div className="bg-white rounded-3xl border border-gray-100 shadow-2xl max-w-lg w-full p-8 space-y-6 animate-scale-in">
             <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
               <Send className="w-5 h-5 text-primary-500" />
-              <span>إرسال إشعار جديد</span>
+            <span>إرسال إشعار جديد للعملاء</span>
             </h2>
 
             <form onSubmit={handleSendNotification} className="space-y-4">
@@ -222,7 +235,7 @@ export function AdminNotificationsPage() {
                 <label className="block text-xs font-bold text-gray-700 mb-2">محتوى الرسالة</label>
                 <textarea
                   rows={4}
-                  placeholder="اكتب تفاصيل الإشعار هنا..."
+                  placeholder="اكتب تفاصيل الإشعار الذي سيظهر للعملاء هنا..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   className="w-full p-3.5 bg-white text-gray-900 border border-gray-200 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
@@ -243,7 +256,7 @@ export function AdminNotificationsPage() {
                   className="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-xs font-bold shadow-md transition-all cursor-pointer inline-flex items-center gap-2"
                 >
                   <Send className="w-4 h-4" />
-                  <span>{sending ? 'جاري الإرسال...' : 'إرسال الآن'}</span>
+                  <span>{sending ? 'جاري الإرسال...' : 'إرسال للعملاء'}</span>
                 </button>
               </div>
             </form>

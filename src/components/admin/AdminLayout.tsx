@@ -130,9 +130,9 @@ export function AdminLayout() {
                 )}
               </button>
 
-              {/* القائمة المنسدلة للإشعارات */}
+              {/* القائمة المنسدلة للإشعارات — تتمركز على الشاشة في الموبايل بدلاً من الطلوع بره الحدود */}
               {showNotifications && (
-                <div className="absolute left-0 sm:right-0 sm:left-auto mt-3 w-80 sm:w-96 bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                <div className="fixed sm:absolute left-1/2 sm:left-auto sm:right-0 -translate-x-1/2 sm:translate-x-0 top-20 sm:top-auto sm:mt-3 w-[92vw] sm:w-96 max-w-sm bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                   <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-gray-50 to-primary-50/30">
                     <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
                       <Bell className="w-4 h-4 text-primary-600" />

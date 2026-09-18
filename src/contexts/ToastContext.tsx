@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
 import { CheckCircle, XCircle, Info, X } from 'lucide-react';
 
 export interface Toast {
@@ -17,16 +17,26 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  // بنتتبع الـ timeout الحالي عشان نلغيه لو ظهر توست جديد قبل ما القديم يختفي لوحده
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dismissToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
   const showToast = useCallback((message: string, type: Toast['type'] = 'success') => {
+    // نلغي أي مؤقت قديم عشان ميمسحش الإشعار الجديد بالغلط بعدين
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
     const id = crypto.randomUUID();
-    setToasts(prev => [...prev, { id, message, type }]);
-    setTimeout(() => {
+    // بنستبدل القائمة بالكامل بعنصر واحد بس — القديم بيختفي فورًا والجديد ياخد مكانه في نفس اللحظة
+    setToasts([{ id, message, type }]);
+
+    timeoutRef.current = setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
+      timeoutRef.current = null;
     }, 3500);
   }, []);
 

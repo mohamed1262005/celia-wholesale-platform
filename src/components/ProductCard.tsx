@@ -63,7 +63,8 @@ export function ProductCard({ product }: ProductCardProps) {
       return;
     }
     addToCart(product, qty);
-    showToast(t('addToCart') + ' — ' + name, 'success');
+    // إشعار قصير واحد بس — الـ ToastContainer بيعرض آخر إشعار فقط فمش هيتكدس
+    showToast(lang === 'ar' ? 'تم الإضافة إلى السلة' : 'Added to cart', 'success');
   };
 
   return (
@@ -78,7 +79,7 @@ export function ProductCard({ product }: ProductCardProps) {
                   key={idx}
                   src={img}
                   alt={name || 'Product'}
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                  className={`absolute inset-0 w-full h-full object-contain bg-white transition-opacity duration-300 ${
                     currentImageIndex === idx ? 'opacity-100 z-1' : 'opacity-0 z-0 pointer-events-none'
                   }`}
                   loading="lazy"
@@ -228,7 +229,8 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
       return;
     }
     addToCart(product, qty);
-    showToast(t('addToCart') + ' — ' + name, 'success');
+    // إشعار قصير واحد بس — الـ ToastContainer بيعرض آخر إشعار فقط فمش هيتكدس
+    showToast(lang === 'ar' ? 'تم الإضافة إلى السلة' : 'Added to cart', 'success');
     onClose();
   };
 
@@ -243,7 +245,7 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
                 key={idx}
                 src={img}
                 alt={name || 'Product'}
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                className={`absolute inset-0 w-full h-full object-contain bg-white transition-opacity duration-300 ${
                   modalImageIndex === idx ? 'opacity-100 z-1' : 'opacity-0 z-0'
                 }`}
               />
@@ -280,7 +282,7 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
           
           {description && (
             <div className="mt-3 pt-3 border-t border-gray-100">
-              <h4 className="text-xs font-bold text-gray-700 mb-1">الوصف:</h4>
+              <h4 className="text-xs font-bold text-gray-700 mb-1">:الوصف</h4>
               <p className="text-sm text-gray-600 leading-relaxed">{description}</p>
             </div>
           )}

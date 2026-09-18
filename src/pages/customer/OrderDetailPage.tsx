@@ -7,9 +7,9 @@ import { supabase } from '@/lib/supabase';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
-import { formatDate, formatDateTime } from '@/lib/pricing';
+import { formatDate } from '@/lib/pricing';
 import type { Order, OrderStatus } from '@/types';
-import { ArrowLeft, Package, MapPin, User, Phone, Mail, XCircle } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, User, Phone, Mail, XCircle, Sparkles, Clock, CheckCircle, Truck } from 'lucide-react';
 
 export function OrderDetailPage() {
   const { id } = useParams();
@@ -66,6 +66,20 @@ export function OrderDetailPage() {
   const statusTimeline: OrderStatus[] = ['new', 'processing', 'confirmed', 'delivered'];
   const currentIdx = order.status === 'cancelled' ? -1 : statusTimeline.indexOf(order.status);
 
+  // مصفوفة الأيقونات المناسبة لكل خطوة في سجل الطلب
+  const timelineIcons = [
+    Sparkles, // جديد (New)
+    Clock,    // قيد المعالجة (Processing)
+    CheckCircle, // مؤكد (Confirmed)
+    Truck     // تم التوصيل (Delivered)
+  ];
+
+  // حساب الإجمالي الكلي بأمان لمنع ظهور NaN
+  const calculatedSubtotal = order.order_items?.reduce((sum, item: any) => {
+    const itemTotal = Number(item.total ?? (Number(item.unit_price || 0) * Number(item.quantity || 1))) || 0;
+    return sum + itemTotal;
+  }, 0) || Number(order.subtotal || 0);
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
       <Link to="/orders" className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-primary-600 mb-4">
@@ -81,7 +95,7 @@ export function OrderDetailPage() {
         <StatusBadge status={order.status} />
       </div>
 
-      {/* Timeline */}
+      {/* Timeline with Icons */}
       {order.status !== 'cancelled' && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5 mb-6">
           <h3 className="font-bold text-sm text-gray-900 mb-4">{t('orderTimeline')}</h3>
@@ -89,15 +103,16 @@ export function OrderDetailPage() {
             {statusTimeline.map((status, idx) => {
               const isComplete = idx <= currentIdx;
               const isCurrent = idx === currentIdx;
+              const StepIcon = timelineIcons[idx];
               return (
                 <div key={status} className="flex flex-col items-center flex-1 relative">
                   {idx < statusTimeline.length - 1 && (
                     <div className={`absolute top-4 start-1/2 w-full h-0.5 ${idx < currentIdx ? 'bg-success-500' : 'bg-gray-200'}`} />
                   )}
-                  <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                    isComplete ? 'bg-success-500 text-white' : 'bg-gray-100 text-gray-400'
-                  } ${isCurrent ? 'ring-4 ring-success-100' : ''}`}>
-                    {isComplete ? '✓' : idx + 1}
+                  <div className={`relative z-10 w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                    isComplete ? 'bg-success-500 text-white shadow-sm shadow-success-500/30' : 'bg-gray-100 text-gray-400'
+                  } ${isCurrent ? 'ring-4 ring-success-100 scale-105' : ''}`}>
+                    {isComplete ? <StepIcon className="w-4 h-4" /> : idx + 1}
                   </div>
                   <span className={`text-xs mt-2 text-center ${isComplete ? 'font-semibold text-gray-900' : 'text-gray-400'}`}>
                     {t(status)}
@@ -117,33 +132,38 @@ export function OrderDetailPage() {
               <h3 className="font-bold text-sm text-gray-900">{t('items2')}</h3>
             </div>
             <div className="divide-y divide-gray-50">
-              {order.order_items?.map(item => (
-                <div key={item.id} className="flex items-center gap-4 p-4">
-                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50 flex-shrink-0">
-                    {item.product_image ? (
-                      <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-6 h-6 text-primary-200" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">{item.product_name}</p>
-                    {item.packaging && <p className="text-xs text-gray-400">{item.packaging}</p>}
-                    <p className="text-xs text-gray-500 mt-1">
-                      {item.quantity} × {Number(item.unit_price).toFixed(2)} {t('currency')}
+              {order.order_items?.map(item => {
+                const unitPrice = Number(item.unit_price || 0);
+                const quantity = Number(item.quantity || 1);
+                const itemTotal = Number(item.total ?? (unitPrice * quantity)) || 0;
+                return (
+                  <div key={item.id} className="flex items-center gap-4 p-4">
+                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50 flex-shrink-0">
+                      {item.product_image ? (
+                        <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-6 h-6 text-primary-200" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900">{item.product_name}</p>
+                      {item.packaging && <p className="text-xs text-gray-400">{item.packaging}</p>}
+                      <p className="text-xs text-gray-500 mt-1">
+                        {quantity} × {unitPrice.toFixed(2)} {t('currency')}
+                      </p>
+                    </div>
+                    <p className="text-sm font-bold text-gray-900 whitespace-nowrap">
+                      {itemTotal.toFixed(2)} {t('currency')}
                     </p>
                   </div>
-                  <p className="text-sm font-bold text-gray-900 whitespace-nowrap">
-                    {Number(item.total).toFixed(2)} {t('currency')}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="px-5 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
               <span className="font-bold text-gray-900">{t('total')}</span>
-              <span className="text-xl font-extrabold text-primary-600">{Number(order.subtotal).toFixed(2)} {t('currency')}</span>
+              <span className="text-xl font-extrabold text-primary-600">{calculatedSubtotal.toFixed(2)} {t('currency')}</span>
             </div>
           </div>
         </div>
@@ -154,16 +174,16 @@ export function OrderDetailPage() {
           <div className="space-y-2.5 text-sm">
             <div className="flex items-center gap-2 text-gray-600">
               <User className="w-4 h-4 text-gray-400" />
-              {order.customer_name}
+              <span>{order.customer_name}</span>
             </div>
             <div className="flex items-center gap-2 text-gray-600">
               <Phone className="w-4 h-4 text-gray-400" />
-              {order.customer_phone}
+              <span>{order.customer_phone}</span>
             </div>
             {order.customer_email && (
               <div className="flex items-center gap-2 text-gray-600">
                 <Mail className="w-4 h-4 text-gray-400" />
-                {order.customer_email}
+                <span>{order.customer_email}</span>
               </div>
             )}
           </div>
@@ -213,3 +233,5 @@ export function OrderDetailPage() {
     </div>
   );
 }
+
+export default OrderDetailPage;

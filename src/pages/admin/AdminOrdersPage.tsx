@@ -86,12 +86,12 @@ export function AdminOrdersPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 pb-28 space-y-6">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-8 pb-28 space-y-6">
       {/* 1. Header & Search */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white rounded-2xl border border-gray-100 shadow-xs p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white rounded-2xl border border-gray-100 shadow-xs p-4 sm:p-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <ShoppingCart className="w-6 h-6 text-primary-500" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-primary-500" />
             {lang === 'ar' ? 'إدارة الطلبات' : 'Orders Management'}
           </h1>
           <p className="text-xs text-gray-400 mt-1">متابعة وعرض طلبات العملاء بشكل لحظي</p>
@@ -112,64 +112,64 @@ export function AdminOrdersPage() {
       </div>
 
       {/* 2. Mini KPI Cards (كروت حية وتفاعلية وملونة) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* كارت الطلبات الجديدة */}
         <div 
           onClick={() => setActiveTab('new')}
-          className="rounded-2xl border border-blue-200 shadow-xs p-5 flex items-center justify-between bg-gradient-to-br from-blue-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
+          className="rounded-2xl border border-blue-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-blue-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
         >
-          <div>
-            <p className="text-xs text-gray-500 font-medium">الطلبات الجديدة</p>
-            <h3 className="text-2xl font-bold text-gray-900 mt-1">{counts.new}</h3>
-            <span className="text-xs text-blue-600 font-semibold mt-1 inline-block">بانتظار المعالجة</span>
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">الطلبات الجديدة</p>
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{counts.new}</h3>
+            <span className="text-[10px] sm:text-xs text-blue-600 font-semibold mt-1 inline-block">بانتظار المعالجة</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
-            <ShoppingCart className="w-6 h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-md shadow-blue-500/20 flex-shrink-0">
+            <ShoppingCart className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* كارت قيد التجهيز */}
         <div 
           onClick={() => setActiveTab('processing')}
-          className="rounded-2xl border border-amber-200 shadow-xs p-5 flex items-center justify-between bg-gradient-to-br from-amber-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
+          className="rounded-2xl border border-amber-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-amber-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
         >
-          <div>
-            <p className="text-xs text-gray-500 font-medium">قيد التجهيز</p>
-            <h3 className="text-2xl font-bold text-gray-900 mt-1">{counts.processing}</h3>
-            <span className="text-xs text-amber-600 font-semibold mt-1 inline-block">جاري العمل عليها</span>
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">قيد التجهيز</p>
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{counts.processing}</h3>
+            <span className="text-[10px] sm:text-xs text-amber-600 font-semibold mt-1 inline-block">جاري العمل عليها</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20">
-            <Clock className="w-6 h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 flex-shrink-0">
+            <Clock className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* كارت تم التوصيل */}
         <div 
           onClick={() => setActiveTab('delivered')}
-          className="rounded-2xl border border-emerald-200 shadow-xs p-5 flex items-center justify-between bg-gradient-to-br from-emerald-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
+          className="rounded-2xl border border-emerald-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-emerald-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
         >
-          <div>
-            <p className="text-xs text-gray-500 font-medium">تم التوصيل</p>
-            <h3 className="text-2xl font-bold text-gray-900 mt-1">{counts.delivered}</h3>
-            <span className="text-xs text-emerald-600 font-semibold mt-1 inline-block">مكتملة بنجاح</span>
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">تم التوصيل</p>
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{counts.delivered}</h3>
+            <span className="text-[10px] sm:text-xs text-emerald-600 font-semibold mt-1 inline-block">مكتملة بنجاح</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
-            <Truck className="w-6 h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 flex-shrink-0">
+            <Truck className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* كارت إجمالي الطلبات */}
         <div 
           onClick={() => setActiveTab('all')}
-          className="rounded-2xl border border-purple-200 shadow-xs p-5 flex items-center justify-between bg-gradient-to-br from-purple-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
+          className="rounded-2xl border border-purple-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-purple-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
         >
-          <div>
-            <p className="text-xs text-gray-500 font-medium">إجمالي الطلبات</p>
-            <h3 className="text-2xl font-bold text-gray-900 mt-1">{counts.all}</h3>
-            <span className="text-xs text-purple-600 font-semibold mt-1 inline-block">جميع الحالات</span>
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">إجمالي الطلبات</p>
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{counts.all}</h3>
+            <span className="text-[10px] sm:text-xs text-purple-600 font-semibold mt-1 inline-block">جميع الحالات</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/20">
-            <CheckCircle className="w-6 h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/20 flex-shrink-0">
+            <CheckCircle className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
       </div>
@@ -187,7 +187,7 @@ export function AdminOrdersPage() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
               activeTab === tab.key
                 ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
                 : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
@@ -201,17 +201,59 @@ export function AdminOrdersPage() {
         ))}
       </div>
 
-      {/* 4. Orders Table */}
+      {/* 4. Orders — عرض جدول على الشاشات الكبيرة، وعرض كروت على الموبايل */}
       {loading ? (
         <div className="text-center py-16 text-gray-400 text-sm">{t('loading')}</div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-card text-center py-16 text-gray-400 text-sm">
+          <ShoppingCart className="w-12 h-12 text-gray-200 mx-auto mb-2" />
+          لا توجد طلبات مطابقة للفلتر الحالي
+        </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden">
-          {filteredOrders.length === 0 ? (
-            <div className="text-center py-16 text-gray-400 text-sm">
-              <ShoppingCart className="w-12 h-12 text-gray-200 mx-auto mb-2" />
-              لا توجد طلبات مطابقة للفلتر الحالي
-            </div>
-          ) : (
+        <>
+          {/* عرض الكروت — يظهر فقط على الموبايل، بدون أي سحب أفقي، كل بيانات الطلب ظاهرة كاملة */}
+          <div className="sm:hidden space-y-3">
+            {filteredOrders.map((order) => {
+              const orderTotal = Number(order.total_amount ?? order.subtotal ?? 0);
+              return (
+                <div
+                  key={order.id}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-card p-4 space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-mono font-bold text-primary-600 text-sm">{order.order_number}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{formatDate(order.created_at, lang)}</p>
+                    </div>
+                    <StatusBadge status={order.status} />
+                  </div>
+
+                  <div className="border-t border-gray-50 pt-3">
+                    <p className="font-bold text-gray-900 text-sm">{order.customer_name || order.phone}</p>
+                    <p className="text-xs text-gray-400 font-mono mt-0.5">{order.customer_phone || order.phone}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-gray-50 pt-3">
+                    <span className="text-xs text-gray-500">{lang === 'ar' ? 'الإجمالي' : 'Total'}</span>
+                    <span className="font-mono font-extrabold text-gray-900 text-sm">
+                      {orderTotal.toFixed(2)} <span className="text-xs font-normal text-gray-500">{t('currency')}</span>
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedOrder(order)}
+                    className="w-full px-3 py-2.5 bg-primary-50 text-primary-600 rounded-xl hover:bg-primary-500 hover:text-white transition-all inline-flex items-center justify-center gap-1.5 font-bold text-xs cursor-pointer"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span>{lang === 'ar' ? 'التفاصيل' : 'View'}</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* عرض الجدول — يظهر فقط من مقاس sm فأكبر (تابلت/ديسكتوب) */}
+          <div className="hidden sm:block bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-right text-xs">
                 <thead className="bg-gray-50 text-gray-500 uppercase font-semibold text-[11px]">
@@ -261,7 +303,7 @@ export function AdminOrdersPage() {
                         <td className="px-6 py-4 text-center">
                           <button
                             onClick={() => setSelectedOrder(order)}
-                            className="px-3 py-2 bg-primary-50 text-primary-600 rounded-xl hover:bg-primary-500 hover:text-white transition-all inline-flex items-center gap-1.5 font-bold shadow-2xs"
+                            className="px-3 py-2 bg-primary-50 text-primary-600 rounded-xl hover:bg-primary-500 hover:text-white transition-all inline-flex items-center gap-1.5 font-bold shadow-2xs cursor-pointer"
                           >
                             <Eye className="w-4 h-4" />
                             <span>{lang === 'ar' ? 'التفاصيل' : 'View'}</span>
@@ -273,17 +315,17 @@ export function AdminOrdersPage() {
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
+          </div>
+        </>
       )}
 
       {/* Order Details Modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl animate-fade-in">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-6 shadow-2xl animate-fade-in">
             <div className="flex justify-between items-center border-b border-gray-100 pb-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                   {selectedOrder.order_number}
                 </h2>
                 <p className="text-xs text-gray-400">
@@ -292,7 +334,7 @@ export function AdminOrdersPage() {
               </div>
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 cursor-pointer flex-shrink-0"
               >
                 ✕
               </button>

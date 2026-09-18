@@ -81,7 +81,7 @@ export function CheckoutPage() {
         const filePath = `receipts/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('orders') // تأكد من إنشاء bucket بهذا الاسم أو استخدام الـ bucket المتاح لدود العميل
+          .from('orders')
           .upload(filePath, receiptFile);
 
         if (!uploadError) {
@@ -90,7 +90,6 @@ export function CheckoutPage() {
             .getPublicUrl(filePath);
           receiptUrl = publicUrlData.publicUrl;
         } else {
-          // في حال فشل رفع التخزين، نتابع الطلب مع ذكر الملاحظة
           console.warn('Storage upload warning:', uploadError);
         }
       }
@@ -99,10 +98,10 @@ export function CheckoutPage() {
       const { data: orderNum } = await supabase.rpc('generate_order_number');
       const finalOrderNum = orderNum || ('CEL-' + Math.floor(10000 + Math.random() * 90000));
 
-      // دمج العنوان مع بيانات الدفع ورابط الإيصال والملاحظات لتظهر بوضوح في شحن الطلب
-      const combinedAddress = `${form.governorate} - ${form.address} ${paymentMethod !== 'cod' ? `[طريقة الدفع: ${paymentMethod} | المرجع: ${form.transactionRef} ${receiptUrl ? `| رابط الإيصال: ${receiptUrl}` : ''}]` : ''} ${form.deliveryNotes ? `[ملاحظات: ${form.deliveryNotes}]` : ''}`;
+      // دمج العنوان مع بيانات الدفع ورابط الإيصال والملاحظات
+      const combinedAddress = `${form.governorate} - ${form.address} ${paymentMethod !== 'cod' ? `[طريقة الدفع: ${paymentMethod} | المرجع: ${form.transactionRef}${receiptUrl ? `| رابط الإيصال: ${receiptUrl}` : ''}]` : ''} ${form.deliveryNotes ? `[ملاحظات: ${form.deliveryNotes}]` : ''}`;
 
-      // إرسال الطلب متوافقاً تماماً مع الأعمدة الحقيقية للجدول
+      // إرسال الطلب
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -142,6 +141,18 @@ export function CheckoutPage() {
 
       const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
       if (itemsError) throw itemsError;
+
+      // إرسال إشعار للأدمن يوضح اسم العميل ورقم الطلب والمبلغ بقالب احترافي
+      try {
+        await supabase.from('notifications').insert({
+          title: 'طلب جملة جديد',
+          message: `قام العميل (${form.name}) بطلب جديد برقم ${finalOrderNum} بقيمة ${Number(subtotal).toFixed(2)} ج.م`,
+          user_id: null, // إشعار عام للأدمن أو لوحة التحكم
+          is_read: false
+        });
+      } catch (notifErr) {
+        console.warn('Notification insert warning:', notifErr);
+      }
 
       clearCart();
       navigate(`/confirmation/${order.id}`);

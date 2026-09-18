@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
@@ -98,24 +98,24 @@ export function ProfilePage() {
   };
 
   return (
-    <div className="w-full px-8 py-8 pb-32 space-y-6" dir="rtl">
+    <div className="w-full px-4 sm:px-8 py-6 sm:py-8 pb-32 space-y-6" dir="rtl">
       {/* 1. Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-pink-50/70 via-purple-50/50 to-white rounded-3xl border border-pink-100/80 shadow-sm p-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-pink-50/70 via-purple-50/50 to-white rounded-3xl border border-pink-100/80 shadow-sm p-6 sm:p-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 flex items-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-primary-500/10 text-primary-600 flex items-center justify-center border border-primary-500/20">
               <User className="w-7 h-7" />
             </div>
             ملفي الشخصي
           </h1>
-          <p className="text-sm text-gray-600 mt-2">إدارة بيانات حسابك الشخصي، ومتابعة إحصائياتك بكل حيوية</p>
+          <p className="text-xs sm:text-sm text-gray-600 mt-2">إدارة بيانات حسابك الشخصي، ومتابعة إحصائياتك بكل حيوية</p>
         </div>
       </div>
 
       {/* 2. Profile Main Card */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-card p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-card p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-300 hover:shadow-xl">
         <div className="flex items-center gap-5 w-full md:w-auto">
-          <div className="relative group">
+          <div className="relative group flex-shrink-0">
             <div className="w-20 h-20 rounded-2xl bg-primary-500 text-white flex items-center justify-center font-extrabold text-2xl overflow-hidden shadow-md border-2 border-white">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
@@ -129,10 +129,10 @@ export function ProfilePage() {
             </label>
           </div>
 
-          <div className="space-y-1.5">
-            <h2 className="text-xl font-extrabold text-gray-900">{name || 'مستخدم جديد'}</h2>
-            <p className="text-xs text-gray-400">{email}</p>
-            <div className="flex items-center gap-2">
+          <div className="space-y-1.5 min-w-0">
+            <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 truncate">{name || 'مستخدم جديد'}</h2>
+            <p className="text-xs text-gray-500 font-medium break-all">{email}</p>
+            <div className="flex items-center gap-2 flex-wrap pt-1">
               {role === 'admin' ? (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-600 rounded-xl text-[11px] font-bold">
                   <Shield className="w-3.5 h-3.5" /> مدير النظام (Admin)
@@ -156,51 +156,66 @@ export function ProfilePage() {
 
         <button
           onClick={() => setIsEditing(!isEditing)}
-          className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl text-xs font-bold transition-all inline-flex items-center gap-2 cursor-pointer"
+          className="w-full md:w-auto px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl text-xs font-bold transition-all inline-flex items-center justify-center gap-2 cursor-pointer"
         >
           <Edit3 className="w-4 h-4" />
           <span>{isEditing ? 'إلغاء' : 'تعديل البيانات'}</span>
         </button>
       </div>
 
-      {/* 3. Real KPI Cards */}
+      {/* 3. Live Animated KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="bg-white rounded-3xl border border-purple-100 shadow-card p-6 flex items-center justify-between">
+        {/* Card 1 */}
+        <div className="group relative bg-white rounded-3xl border border-purple-100 shadow-card p-6 flex items-center justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl overflow-hidden">
+          <div className="absolute top-0 start-0 w-1.5 h-full bg-purple-500 rounded-e-full opacity-70 group-hover:opacity-100 transition-opacity" />
           <div>
-            <p className="text-xs font-bold text-gray-500">الطلبات</p>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+              <p className="text-xs font-bold text-gray-500">الطلبات</p>
+            </div>
             <h3 className="text-2xl font-extrabold text-gray-900 mt-1">{ordersCount}</h3>
             <span className="text-xs text-purple-600 font-bold mt-1 inline-block">إجمالي الطلبات</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+          <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold transition-transform group-hover:scale-110 duration-300">
             <Package className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-emerald-100 shadow-card p-6 flex items-center justify-between">
+        {/* Card 2 */}
+        <div className="group relative bg-white rounded-3xl border border-emerald-100 shadow-card p-6 flex items-center justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl overflow-hidden">
+          <div className="absolute top-0 start-0 w-1.5 h-full bg-emerald-500 rounded-e-full opacity-70 group-hover:opacity-100 transition-opacity" />
           <div>
-            <p className="text-xs font-bold text-gray-500">إجمالي الإنفاق</p>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <p className="text-xs font-bold text-gray-500">إجمالي الإنفاق</p>
+            </div>
             <h3 className="text-2xl font-extrabold text-gray-900 mt-1">{totalSpent} جنيه</h3>
             <span className="text-xs text-emerald-600 font-bold mt-1 inline-block">حساب موثوق</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold transition-transform group-hover:scale-110 duration-300">
             <DollarSign className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-amber-100 shadow-card p-6 flex items-center justify-between">
+        {/* Card 3 */}
+        <div className="group relative bg-white rounded-3xl border border-amber-100 shadow-card p-6 flex items-center justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl overflow-hidden">
+          <div className="absolute top-0 start-0 w-1.5 h-full bg-amber-500 rounded-e-full opacity-70 group-hover:opacity-100 transition-opacity" />
           <div>
-            <p className="text-xs font-bold text-gray-500">طلبات نشطة</p>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <p className="text-xs font-bold text-gray-500">طلبات نشطة</p>
+            </div>
             <h3 className="text-2xl font-extrabold text-gray-900 mt-1">{activeOrders}</h3>
             <span className="text-xs text-amber-600 font-bold mt-1 inline-block">قيد التنفيذ</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold transition-transform group-hover:scale-110 duration-300">
             <Package className="w-6 h-6" />
           </div>
         </div>
       </div>
 
       {/* 4. Account Information Form */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-card p-8 space-y-6">
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-card p-6 sm:p-8 space-y-6 transition-all duration-300 hover:shadow-xl">
         <h3 className="text-base font-extrabold text-gray-900">معلومات الحساب</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -211,7 +226,7 @@ export function ProfilePage() {
               disabled={!isEditing}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full p-3.5 bg-gray-50 disabled:bg-gray-50/50 text-gray-900 border border-gray-200 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full p-3.5 bg-gray-50 disabled:bg-gray-50/50 text-gray-900 border border-gray-200 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
             />
           </div>
 
@@ -222,7 +237,7 @@ export function ProfilePage() {
               disabled={!isEditing}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full p-3.5 bg-gray-50 disabled:bg-gray-50/50 text-gray-900 border border-gray-200 rounded-2xl text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full p-3.5 bg-gray-50 disabled:bg-gray-50/50 text-gray-900 border border-gray-200 rounded-2xl text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
             />
           </div>
         </div>
@@ -231,7 +246,7 @@ export function ProfilePage() {
           <div className="flex justify-end pt-4 border-t border-gray-100">
             <button
               onClick={handleSaveProfile}
-              className="px-7 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-xs font-bold shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-7 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-xs font-bold shadow-md transition-all inline-flex items-center justify-center gap-2 cursor-pointer"
             >
               <Save className="w-4 h-4" />
               <span>حفظ التعديلات</span>
