@@ -86,15 +86,28 @@ export function AdminCategoryFormPage() {
     e.preventDefault();
     setSubmitting(true);
 
-    const payload = {
+    // توليد slug فريد تلقائياً لمنع خطأ قاعدة البيانات duplicate key value
+    const baseSlug = (formData.name_en || formData.name_ar)
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    
+    const uniqueSlug = `${baseSlug || 'category'}-${Math.random().toString(36).substring(2, 8)}`;
+
+    const payload: any = {
       name_ar: formData.name_ar,
       name_en: formData.name_en || formData.name_ar,
       image: formData.image,
       image_url: formData.image,
+      slug: uniqueSlug, // إضافة الـ slug الفريد لضمان عدم حدوث أي خطأ
     };
 
     let error;
     if (isEditing && id) {
+      // عند التعديل، لا داعي لتحديث الslug إذا كان موجوداً مسبقاً لكي لا نكسر الروابط القديمة
+      delete payload.slug;
       const res = await supabase.from('categories').update(payload).eq('id', id);
       error = res.error;
     } else {
