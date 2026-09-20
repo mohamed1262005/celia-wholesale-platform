@@ -55,7 +55,6 @@ export function useProducts(filters?: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // استخراج القيم النصية بشكل آمن لمنع تكرار الـ loops بسبب كائنات الـ filters
   const categoryId = filters?.categoryId;
   const categorySlug = filters?.categorySlug;
   const search = filters?.search;
@@ -189,16 +188,19 @@ export function useNotifications(userId?: string) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
-    const { data } = await supabase
+    let query = supabase
       .from('notifications')
       .select('*')
-      .eq('user_id', userId)
       .order('created_at', { ascending: false });
+
+    if (userId) {
+      query = query.or(`user_id.eq.${userId},user_id.is.null`);
+    } else {
+      query = query.is('user_id', null);
+    }
+
+    const { data } = await query;
     setNotifications((data as AppNotification[]) || []);
     setLoading(false);
   }, [userId]);
@@ -206,17 +208,27 @@ export function useNotifications(userId?: string) {
   useEffect(() => { load(); }, [load]);
 
   const markAsRead = useCallback(async (id: string) => {
-    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+    await supabase.from('notifications').update({ is_read: true, read: true }).eq('id', id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true, read: true } : n));
   }, []);
 
   const markAllAsRead = useCallback(async () => {
-    if (!userId) return;
-    await supabase.from('notifications').update({ is_read: true }).eq('user_id', userId);
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    let query = supabase.from('notifications').update({ is_read: true, read: true });
+    if (userId) {
+      query = query.or(`user_id.eq.${userId},user_id.is.null`);
+    } else {
+      query = query.is('user_id', null);
+    }
+    await query;
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true, read: true })));
   }, [userId]);
 
-  const unreadCount = notifications.filter(n => !(n as any).is_read && !(n as any).read).length;
+  const unreadCount = useMemo(() => {
+    return notifications.filter(n => {
+      const isRead = (n as any).is_read ?? (n as any).read ?? false;
+      return !isRead;
+    }).length;
+  }, [notifications]);
 
   return { notifications, loading, unreadCount, markAsRead, markAllAsRead, reload: load };
 }

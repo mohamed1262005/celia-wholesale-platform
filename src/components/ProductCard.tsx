@@ -6,13 +6,12 @@ import { useToast } from '@/contexts/ToastContext';
 import type { Product } from '@/types';
 import { getPricingForQuantity, getAvailableStock, getStockStatus } from '@/lib/pricing';
 import { QuantitySelector } from '@/components/ui/QuantitySelector';
-import { ShoppingBag, Eye, PackageX, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingBag, Eye, PackageX, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
 }
 
-// دالة آمنة لجلب مصفوفة الصور من قاعدة البيانات (سواء كانت image_urls أو images أو image_url)
 function getProductImages(product: Product): string[] {
   const p = product as any;
   if (Array.isArray(p.images) && p.images.length > 0) {
@@ -63,7 +62,6 @@ export function ProductCard({ product }: ProductCardProps) {
       return;
     }
     addToCart(product, qty);
-    // إشعار قصير واحد بس — الـ ToastContainer بيعرض آخر إشعار فقط فمش هيتكدس
     showToast(lang === 'ar' ? 'تم الإضافة إلى السلة' : 'Added to cart', 'success');
   };
 
@@ -105,15 +103,15 @@ export function ProductCard({ product }: ProductCardProps) {
             ) : null}
           </div>
 
-          {/* Quick view button */}
+          {/* Quick view button - دائماً ظاهر */}
           <button
             onClick={(e) => { e.preventDefault(); setShowQuickView(true); }}
-            className="absolute top-2 end-2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm cursor-pointer z-20"
+            className="absolute top-2 end-2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 opacity-100 transition-all hover:bg-white shadow-sm cursor-pointer z-20"
           >
             <Eye className="w-4 h-4" />
           </button>
 
-          {/* أسهم التنقل والعداد لا تظهر إلا إذا كان هناك أكثر من صورة حقيقية */}
+          {/* أسهم التنقل والعداد */}
           {images.length > 1 && (
             <div className="absolute inset-x-0 bottom-2 flex items-center justify-between px-3 z-20 pointer-events-none">
               <button
@@ -229,7 +227,6 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
       return;
     }
     addToCart(product, qty);
-    // إشعار قصير واحد بس — الـ ToastContainer بيعرض آخر إشعار فقط فمش هيتكدس
     showToast(lang === 'ar' ? 'تم الإضافة إلى السلة' : 'Added to cart', 'success');
     onClose();
   };
@@ -238,6 +235,16 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
       <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" />
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col md:flex-row animate-scale-in" onClick={e => e.stopPropagation()}>
+        
+        {/* زر الإغلاق (X) في أعلى النافذة */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 end-3 z-30 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+          aria-label="Close Modal"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
         <div className="md:w-1/2 aspect-square bg-gradient-to-br from-primary-50 to-secondary-50 overflow-hidden relative">
           {images.length > 0 ? (
             images.map((img: string, idx: number) => (
@@ -277,7 +284,7 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
           )}
         </div>
         <div className="md:w-1/2 p-6 flex flex-col overflow-y-auto">
-          <h3 className="text-lg font-bold text-gray-900">{name}</h3>
+          <h3 className="text-lg font-bold text-gray-900 pe-6">{name}</h3>
           {product.packaging && <p className="text-sm text-gray-400 mt-1">{product.packaging}</p>}
           
           {description && (
@@ -303,7 +310,7 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
                   className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 transition-colors cursor-pointer"
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  {t('addToCart')}
+                  <span>{t('addToCart')}</span>
                 </button>
               </div>
             ) : (
