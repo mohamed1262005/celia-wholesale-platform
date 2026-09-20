@@ -23,7 +23,7 @@ export function AdminReportsPage() {
 
   const [salesData, setSalesData] = useState<{ label: string; value: number }[]>([]);
   const [ordersData, setOrdersData] = useState<{ label: string; value: number }[]>([]);
-  const [topProducts, setTopProducts] = useState<{ name: string; qty: number; revenue: number }[]>([]);
+  const [topProducts, setTopProducts] = useState<{ name: string; qty: number; revenue: number; image?: string }[]>([]);
   const [statusBreakdown, setStatusBreakdown] = useState<Record<string, number>>({});
   const [totals, setTotals] = useState({ revenue: 0, orders: 0, products: 0, units: 0 });
 
@@ -49,11 +49,13 @@ export function AdminReportsPage() {
       const [ordersRes, itemsRes, productsRes] = await Promise.all([
         supabase.from('orders').select('*'),
         supabase.from('order_items').select('*'),
-        supabase.from('products').select('id', { count: 'exact', head: true }),
+        // بنجيب بيانات المنتجات كاملة (مش بس العدد) عشان نقدر نطابق الصورة مع كل منتج مباع
+        supabase.from('products').select('id, name_ar, name_en, image_url, image_urls'),
       ]);
 
       const orders = ordersRes.data || [];
       const items = itemsRes.data || [];
+      const products = productsRes.data || [];
       setRawOrders(orders);
       setRawItems(items);
 
@@ -65,18 +67,28 @@ export function AdminReportsPage() {
       });
       setStatusBreakdown(sBreakdown);
 
-      // Top products
-      const productMap: Record<string, { qty: number; revenue: number }> = {};
+      // Top products — بنربط كل عنصر بمنتجه الحقيقي (بالـ id أو الاسم) عشان نجيب صورته
+      const productMap: Record<string, { qty: number; revenue: number; image?: string }> = {};
       items.forEach(item => {
         const pName = item.product_name || item.name || 'منتج';
-        if (!productMap[pName]) productMap[pName] = { qty: 0, revenue: 0 };
+        if (!productMap[pName]) {
+          const matchedProduct = products.find(
+            (p: any) => p.id === item.product_id || p.name_ar === pName || p.name_en === pName
+          );
+          const productImage = matchedProduct
+            ? (Array.isArray(matchedProduct.image_urls) && matchedProduct.image_urls.length > 0
+                ? matchedProduct.image_urls[0]
+                : matchedProduct.image_url)
+            : undefined;
+          productMap[pName] = { qty: 0, revenue: 0, image: productImage };
+        }
         productMap[pName].qty += Number(item.quantity || 0);
         productMap[pName].revenue += Number(item.total ?? item.price ?? 0);
       });
       const top = Object.entries(productMap)
         .sort(([, a], [, b]) => b.qty - a.qty)
         .slice(0, 8)
-        .map(([name, data]) => ({ name, qty: data.qty, revenue: data.revenue }));
+        .map(([name, data]) => ({ name, qty: data.qty, revenue: data.revenue, image: data.image }));
       setTopProducts(top);
 
       // Totals
@@ -89,7 +101,7 @@ export function AdminReportsPage() {
       setTotals({
         revenue: totalRev,
         orders: orders.length,
-        products: productsRes.count || 0,
+        products: products.length,
         units: totalUnits,
       });
 
@@ -223,24 +235,24 @@ export function AdminReportsPage() {
   const totalStatus = Object.values(statusBreakdown).reduce((a, b) => a + b, 0) || 1;
 
   return (
-    <div className="space-y-6 pb-28 max-w-7xl mx-auto px-6">
+    <div className="space-y-6 pb-28 max-w-7xl mx-auto px-3 sm:px-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('reports')}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('reports')}</h1>
           <p className="text-sm text-gray-500 mt-1">{t('salesOverview')}</p>
         </div>
 
         {/* أزرار التبديل العام */}
-        <div className="flex items-center bg-gray-100 p-1 rounded-xl">
+        <div className="flex items-center bg-gray-100 p-1 rounded-xl w-full sm:w-auto">
           <button
             onClick={() => { setViewMode('daily'); setSalesDate(''); setSalesMonth(''); setOrdersDate(''); setOrdersMonth(''); }}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${viewMode === 'daily' && !salesDate && !salesMonth ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+            className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all cursor-pointer ${viewMode === 'daily' && !salesDate && !salesMonth ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
           >
             {lang === 'ar' ? 'يومي (آخر 7 أيام)' : 'Daily'}
           </button>
           <button
             onClick={() => { setViewMode('monthly'); setSalesDate(''); setSalesMonth(''); setOrdersDate(''); setOrdersMonth(''); }}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${viewMode === 'monthly' && !salesDate && !salesMonth ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+            className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all cursor-pointer ${viewMode === 'monthly' && !salesDate && !salesMonth ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
           >
             {lang === 'ar' ? 'شهري (آخر 6 شهور)' : 'Monthly'}
           </button>
@@ -248,75 +260,75 @@ export function AdminReportsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-2xl border border-amber-200 shadow-xs p-5 flex items-center justify-between bg-gradient-to-br from-amber-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
-          <div>
-            <p className="text-xs text-gray-500 font-medium">{t('revenue')}</p>
-            <h3 className="text-xl font-bold text-gray-900 mt-1 font-mono">{formatPrice(totals.revenue, t('currency'))}</h3>
-            <span className="text-xs text-emerald-600 font-semibold mt-1 inline-block">نشط ومحدث</span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="rounded-2xl border border-amber-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-amber-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">{t('revenue')}</p>
+            <h3 className="text-base sm:text-xl font-bold text-gray-900 mt-1 font-mono truncate">{formatPrice(totals.revenue, t('currency'))}</h3>
+            <span className="text-[10px] sm:text-xs text-emerald-600 font-semibold mt-1 inline-block">نشط ومحدث</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20">
-            <DollarSign className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-pink-200 shadow-xs p-5 flex items-center justify-between bg-gradient-to-br from-pink-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
-          <div>
-            <p className="text-xs text-gray-500 font-medium">{t('totalOrders')}</p>
-            <h3 className="text-2xl font-bold text-gray-900 mt-1">{totals.orders}</h3>
-            <span className="text-xs text-emerald-600 font-semibold mt-1 inline-block">طلبات الجملة</span>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-[#FF6FA5] text-white flex items-center justify-center shadow-md shadow-pink-500/20">
-            <ShoppingCart className="w-6 h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 flex-shrink-0">
+            <DollarSign className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="rounded-2xl border border-teal-200 shadow-xs p-5 flex items-center justify-between bg-gradient-to-br from-teal-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
-          <div>
-            <p className="text-xs text-gray-500 font-medium">{t('unitsSold')}</p>
-            <h3 className="text-2xl font-bold text-gray-900 mt-1">{totals.units}</h3>
-            <span className="text-xs text-emerald-600 font-semibold mt-1 inline-block">إجمالي القطع</span>
+        <div className="rounded-2xl border border-pink-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-pink-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">{t('totalOrders')}</p>
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{totals.orders}</h3>
+            <span className="text-[10px] sm:text-xs text-emerald-600 font-semibold mt-1 inline-block">طلبات الجملة</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-[#00C7B7] text-white flex items-center justify-center shadow-md shadow-teal-500/20">
-            <Package className="w-6 h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-[#FF6FA5] text-white flex items-center justify-center shadow-md shadow-pink-500/20 flex-shrink-0">
+            <ShoppingCart className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="rounded-2xl border border-purple-200 shadow-xs p-5 flex items-center justify-between bg-gradient-to-br from-purple-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
-          <div>
-            <p className="text-xs text-gray-500 font-medium">{t('totalProducts')}</p>
-            <h3 className="text-2xl font-bold text-gray-900 mt-1">{totals.products}</h3>
-            <span className="text-xs text-purple-600 font-semibold mt-1 inline-block">متوفر بالمخزون</span>
+        <div className="rounded-2xl border border-teal-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-teal-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">{t('unitsSold')}</p>
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{totals.units}</h3>
+            <span className="text-[10px] sm:text-xs text-emerald-600 font-semibold mt-1 inline-block">إجمالي القطع</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/20">
-            <TrendingUp className="w-6 h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-[#00C7B7] text-white flex items-center justify-center shadow-md shadow-teal-500/20 flex-shrink-0">
+            <Package className="w-4 h-4 sm:w-6 sm:h-6" />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-purple-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-purple-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">{t('totalProducts')}</p>
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{totals.products}</h3>
+            <span className="text-[10px] sm:text-xs text-purple-600 font-semibold mt-1 inline-block">متوفر بالمخزون</span>
+          </div>
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/20 flex-shrink-0">
+            <TrendingUp className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Sales Chart with Custom Date Picker */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-6 relative">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-gray-900 text-sm">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-4 sm:p-6 relative">
+          <div className="flex items-center justify-between mb-4 gap-2">
+            <h2 className="font-bold text-gray-900 text-xs sm:text-sm truncate">
               {salesDate ? `المبيعات ليوم ${salesDate}` : salesMonth ? `مبيعات شهر ${salesMonth}` : t('salesByMonth')}
             </h2>
 
-            <div className="relative" ref={salesPickerRef}>
+            <div className="relative flex-shrink-0" ref={salesPickerRef}>
               <button
                 onClick={() => setShowSalesPicker(!showSalesPicker)}
-                className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 text-gray-600 flex items-center gap-1.5 transition-all text-xs font-bold"
+                className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 text-gray-600 flex items-center gap-1.5 transition-all text-xs font-bold cursor-pointer whitespace-nowrap"
               >
                 <Calendar className="w-4 h-4 text-primary-500" />
-                <span>تصفية</span>
+                <span className="hidden sm:inline">تصفية</span>
               </button>
 
               {showSalesPicker && (
-                <div className="absolute left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 space-y-3 z-30">
+                <div className="fixed sm:absolute left-1/2 sm:left-0 -translate-x-1/2 sm:translate-x-0 top-24 sm:top-auto sm:mt-2 w-[85vw] sm:w-64 max-w-xs bg-white rounded-2xl shadow-xl border border-gray-100 p-4 space-y-3 z-30">
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-bold text-gray-700">تاريخ المبيعات</span>
                     {(salesDate || salesMonth) && (
-                      <button onClick={() => { setSalesDate(''); setSalesMonth(''); setShowSalesPicker(false); }} className="text-[10px] text-red-500 font-bold">إلغاء التصفية</button>
+                      <button onClick={() => { setSalesDate(''); setSalesMonth(''); setShowSalesPicker(false); }} className="text-[10px] text-red-500 font-bold cursor-pointer">إلغاء التصفية</button>
                     )}
                   </div>
                   <div>
@@ -332,47 +344,47 @@ export function AdminReportsPage() {
             </div>
           </div>
 
-          <div className="flex items-end justify-between gap-2 h-48">
+          <div className="flex items-end justify-between gap-1 sm:gap-2 h-40 sm:h-48">
             {salesData.map((m, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2">
+              <div key={i} className="flex-1 flex flex-col items-center gap-2 min-w-0">
                 <div className="w-full flex-1 flex items-end">
                   <div
                     className="w-full rounded-t-lg bg-gradient-to-t from-primary-400 to-primary-600 transition-all duration-700 hover:opacity-80 relative group"
                     style={{ height: `${(m.value / maxSales) * 100}%`, minHeight: '4px' }}
                   >
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-white px-1 shadow rounded">
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-white px-1 shadow rounded">
                       {m.value > 0 ? formatPrice(m.value, t('currency')) : '0'}
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] text-gray-500 truncate max-w-[40px]">{m.label}</span>
+                <span className="text-[9px] sm:text-[10px] text-gray-500 truncate max-w-[36px] sm:max-w-[40px]">{m.label}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Orders Chart with Custom Date Picker */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-6 relative">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-gray-900 text-sm">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-4 sm:p-6 relative">
+          <div className="flex items-center justify-between mb-4 gap-2">
+            <h2 className="font-bold text-gray-900 text-xs sm:text-sm truncate">
               {ordersDate ? `الطلبات ليوم ${ordersDate}` : ordersMonth ? `طلبات شهر ${ordersMonth}` : t('ordersByMonth')}
             </h2>
 
-            <div className="relative" ref={ordersPickerRef}>
+            <div className="relative flex-shrink-0" ref={ordersPickerRef}>
               <button
                 onClick={() => setShowOrdersPicker(!showOrdersPicker)}
-                className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 text-gray-600 flex items-center gap-1.5 transition-all text-xs font-bold"
+                className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 text-gray-600 flex items-center gap-1.5 transition-all text-xs font-bold cursor-pointer whitespace-nowrap"
               >
                 <Calendar className="w-4 h-4 text-primary-500" />
-                <span>تصفية</span>
+                <span className="hidden sm:inline">تصفية</span>
               </button>
 
               {showOrdersPicker && (
-                <div className="absolute left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 space-y-3 z-30">
+                <div className="fixed sm:absolute left-1/2 sm:left-0 -translate-x-1/2 sm:translate-x-0 top-24 sm:top-auto sm:mt-2 w-[85vw] sm:w-64 max-w-xs bg-white rounded-2xl shadow-xl border border-gray-100 p-4 space-y-3 z-30">
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-bold text-gray-700">تاريخ الطلبات</span>
                     {(ordersDate || ordersMonth) && (
-                      <button onClick={() => { setOrdersDate(''); setOrdersMonth(''); setShowOrdersPicker(false); }} className="text-[10px] text-red-500 font-bold">إلغاء التصفية</button>
+                      <button onClick={() => { setOrdersDate(''); setOrdersMonth(''); setShowOrdersPicker(false); }} className="text-[10px] text-red-500 font-bold cursor-pointer">إلغاء التصفية</button>
                     )}
                   </div>
                   <div>
@@ -388,48 +400,58 @@ export function AdminReportsPage() {
             </div>
           </div>
 
-          <div className="flex items-end justify-between gap-2 h-48">
+          <div className="flex items-end justify-between gap-1 sm:gap-2 h-40 sm:h-48">
             {ordersData.map((m, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2">
+              <div key={i} className="flex-1 flex flex-col items-center gap-2 min-w-0">
                 <div className="w-full flex-1 flex items-end">
                   <div
                     className="w-full rounded-t-lg bg-gradient-to-t from-secondary-400 to-secondary-600 transition-all duration-700 hover:opacity-80 relative group"
                     style={{ height: `${(m.value / maxOrders) * 100}%`, minHeight: '4px' }}
                   >
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity bg-white px-1 shadow rounded">
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity bg-white px-1 shadow rounded">
                       {m.value}
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] text-gray-500 truncate max-w-[40px]">{m.label}</span>
+                <span className="text-[9px] sm:text-[10px] text-gray-500 truncate max-w-[36px] sm:max-w-[40px]">{m.label}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Top selling products */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-4 sm:p-6">
           <h2 className="font-bold text-gray-900 text-sm mb-4">{t('topSellingProducts')}</h2>
           {topProducts.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-8">{t('noData')}</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {topProducts.map((p, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-lg bg-primary-50 text-primary-600 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-lg bg-primary-50 text-primary-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
                     {i + 1}
                   </div>
+                  {/* صورة المنتج — تظهر لو موجودة، وإلا أيقونة افتراضية */}
+                  <div className="w-10 h-10 rounded-lg bg-gray-50 overflow-hidden flex-shrink-0 border border-gray-100 flex items-center justify-center">
+                    {p.image ? (
+                      <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Package className="w-4 h-4 text-gray-300" />
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
-                    <div className="h-2 rounded-full bg-gray-100 overflow-hidden mt-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2 flex-1">{p.name}</p>
+                      <div className="text-end flex-shrink-0">
+                        <p className="text-xs sm:text-sm font-bold text-gray-900">{p.qty}</p>
+                        <p className="text-[10px] text-gray-400 whitespace-nowrap">{t('unitsSold')}</p>
+                      </div>
+                    </div>
+                    <div className="h-2 rounded-full bg-gray-100 overflow-hidden mt-2">
                       <div className="h-full rounded-full bg-gradient-to-r from-primary-400 to-primary-600 transition-all duration-700" style={{ width: `${(p.qty / maxQty) * 100}%` }} />
                     </div>
-                  </div>
-                  <div className="text-end flex-shrink-0">
-                    <p className="text-sm font-bold text-gray-900">{p.qty}</p>
-                    <p className="text-xs text-gray-400">{t('unitsSold')}</p>
                   </div>
                 </div>
               ))}
@@ -438,7 +460,7 @@ export function AdminReportsPage() {
         </div>
 
         {/* Status breakdown */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-4 sm:p-6">
           <h2 className="font-bold text-gray-900 text-sm mb-4">{t('statusBreakdown')}</h2>
           {Object.keys(statusBreakdown).length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-8">{t('noData')}</p>
@@ -459,14 +481,14 @@ export function AdminReportsPage() {
                   const count = statusBreakdown[status] || 0;
                   const pct = ((count / totalStatus) * 100).toFixed(1);
                   return (
-                    <div key={status} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-3 h-3 rounded-full ${statusColors[status] || 'bg-gray-400'}`} />
-                        <span className="text-gray-600">{statusLabels[status] || status}</span>
+                    <div key={status} className="flex items-center justify-between text-xs gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`w-3 h-3 rounded-full flex-shrink-0 ${statusColors[status] || 'bg-gray-400'}`} />
+                        <span className="text-gray-600 truncate">{statusLabels[status] || status}</span>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-shrink-0">
                         <span className="font-bold text-gray-900">{count}</span>
-                        <span className="text-xs text-gray-400 w-12 text-end">{pct}%</span>
+                        <span className="text-xs text-gray-400 w-10 sm:w-12 text-end">{pct}%</span>
                       </div>
                     </div>
                   );
