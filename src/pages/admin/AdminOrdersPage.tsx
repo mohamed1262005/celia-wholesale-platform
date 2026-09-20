@@ -5,7 +5,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatDate, formatPrice } from '@/lib/pricing';
-import { Eye, Search, Phone, MapPin, FileText, ShoppingCart, Clock, CheckCircle, Truck, XCircle } from 'lucide-react';
+import { Eye, Search, Phone, MapPin, FileText, ShoppingCart, Clock, CheckCircle, Truck, XCircle, Trash2 } from 'lucide-react';
 
 export function AdminOrdersPage() {
   const { t, lang } = useLanguage();
@@ -63,6 +63,38 @@ export function AdminOrdersPage() {
     }
   };
 
+  // دالة حذف الطلب/الفاتورة
+  const deleteOrder = async (orderId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    
+    const confirmDelete = window.confirm(
+      lang === 'ar' 
+        ? 'هل أنت متأكد من حذف هذه الفاتورة/الطلب نهائياً؟' 
+        : 'Are you sure you want to delete this order?'
+    );
+
+    if (!confirmDelete) return;
+
+    // أولاً: حذف عناصر الطلب المرتبطة لتجنب قيود المفتاح الأجنبي (Foreign Key)
+    await supabase.from('order_items').delete().eq('order_id', orderId);
+
+    // ثانياً: حذف الطلب نفسه
+    const { error } = await supabase.from('orders').delete().eq('id', orderId);
+
+    if (error) {
+      showToast(error.message, 'error');
+    } else {
+      showToast(
+        lang === 'ar' ? 'تم حذف الطلب بنجاح' : 'Order deleted successfully',
+        'success'
+      );
+      setOrders(orders.filter(o => o.id !== orderId));
+      if (selectedOrder && selectedOrder.id === orderId) {
+        setSelectedOrder(null);
+      }
+    }
+  };
+
   // فلترة الطلبات حسب البحث وحسب التاب النشط
   const filteredOrders = orders.filter((order) => {
     const search = searchTerm.toLowerCase();
@@ -111,9 +143,8 @@ export function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* 2. Mini KPI Cards (كروت حية وتفاعلية وملونة) */}
+      {/* 2. Mini KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* كارت الطلبات الجديدة */}
         <div 
           onClick={() => setActiveTab('new')}
           className="rounded-2xl border border-blue-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-blue-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
@@ -128,7 +159,6 @@ export function AdminOrdersPage() {
           </div>
         </div>
 
-        {/* كارت قيد التجهيز */}
         <div 
           onClick={() => setActiveTab('processing')}
           className="rounded-2xl border border-amber-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-amber-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
@@ -143,7 +173,6 @@ export function AdminOrdersPage() {
           </div>
         </div>
 
-        {/* كارت تم التوصيل */}
         <div 
           onClick={() => setActiveTab('delivered')}
           className="rounded-2xl border border-emerald-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-emerald-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
@@ -158,7 +187,6 @@ export function AdminOrdersPage() {
           </div>
         </div>
 
-        {/* كارت إجمالي الطلبات */}
         <div 
           onClick={() => setActiveTab('all')}
           className="rounded-2xl border border-purple-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-purple-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
@@ -174,7 +202,7 @@ export function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* 3. Quick Filter Tabs (فلاتر الحالات السريعة) */}
+      {/* 3. Quick Filter Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2">
         {[
           { key: 'all', label: 'الكل' },
@@ -201,7 +229,7 @@ export function AdminOrdersPage() {
         ))}
       </div>
 
-      {/* 4. Orders — عرض جدول على الشاشات الكبيرة، وعرض كروت على الموبايل */}
+      {/* 4. Orders List */}
       {loading ? (
         <div className="text-center py-16 text-gray-400 text-sm">{t('loading')}</div>
       ) : filteredOrders.length === 0 ? (
@@ -211,7 +239,7 @@ export function AdminOrdersPage() {
         </div>
       ) : (
         <>
-          {/* عرض الكروت — يظهر فقط على الموبايل، بدون أي سحب أفقي، كل بيانات الطلب ظاهرة كاملة */}
+          {/* Mobile Cards View */}
           <div className="sm:hidden space-y-3">
             {filteredOrders.map((order) => {
               const orderTotal = Number(order.total_amount ?? order.subtotal ?? 0);
@@ -240,19 +268,28 @@ export function AdminOrdersPage() {
                     </span>
                   </div>
 
-                  <button
-                    onClick={() => setSelectedOrder(order)}
-                    className="w-full px-3 py-2.5 bg-primary-50 text-primary-600 rounded-xl hover:bg-primary-500 hover:text-white transition-all inline-flex items-center justify-center gap-1.5 font-bold text-xs cursor-pointer"
-                  >
-                    <Eye className="w-4 h-4" />
-                    <span>{lang === 'ar' ? 'التفاصيل' : 'View'}</span>
-                  </button>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => setSelectedOrder(order)}
+                      className="flex-1 px-3 py-2.5 bg-primary-50 text-primary-600 rounded-xl hover:bg-primary-500 hover:text-white transition-all inline-flex items-center justify-center gap-1.5 font-bold text-xs cursor-pointer"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>{lang === 'ar' ? 'التفاصيل' : 'View'}</span>
+                    </button>
+                    <button
+                      onClick={(e) => deleteOrder(order.id, e)}
+                      className="px-3 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-500 hover:text-white transition-all inline-flex items-center justify-center gap-1.5 font-bold text-xs cursor-pointer"
+                      title={lang === 'ar' ? 'حذف الطلب' : 'Delete Order'}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
 
-          {/* عرض الجدول — يظهر فقط من مقاس sm فأكبر (تابلت/ديسكتوب) */}
+          {/* Desktop Table View */}
           <div className="hidden sm:block bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-right text-xs">
@@ -301,13 +338,22 @@ export function AdminOrdersPage() {
                           <StatusBadge status={order.status} />
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <button
-                            onClick={() => setSelectedOrder(order)}
-                            className="px-3 py-2 bg-primary-50 text-primary-600 rounded-xl hover:bg-primary-500 hover:text-white transition-all inline-flex items-center gap-1.5 font-bold shadow-2xs cursor-pointer"
-                          >
-                            <Eye className="w-4 h-4" />
-                            <span>{lang === 'ar' ? 'التفاصيل' : 'View'}</span>
-                          </button>
+                          <div className="inline-flex items-center gap-1.5 justify-center">
+                            <button
+                              onClick={() => setSelectedOrder(order)}
+                              className="px-3 py-2 bg-primary-50 text-primary-600 rounded-xl hover:bg-primary-500 hover:text-white transition-all inline-flex items-center gap-1.5 font-bold shadow-2xs cursor-pointer"
+                            >
+                              <Eye className="w-4 h-4" />
+                              <span>{lang === 'ar' ? 'التفاصيل' : 'View'}</span>
+                            </button>
+                            <button
+                              onClick={(e) => deleteOrder(order.id, e)}
+                              className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-500 hover:text-white transition-all inline-flex items-center justify-center font-bold shadow-2xs cursor-pointer"
+                              title={lang === 'ar' ? 'حذف الطلب' : 'Delete Order'}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -332,12 +378,21 @@ export function AdminOrdersPage() {
                   {formatDate(selectedOrder.created_at, lang)}
                 </p>
               </div>
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 cursor-pointer flex-shrink-0"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => deleteOrder(selectedOrder.id)}
+                  className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{lang === 'ar' ? 'حذف الفاتورة' : 'Delete Order'}</span>
+                </button>
+                <button
+                  onClick={() => setSelectedOrder(null)}
+                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 cursor-pointer flex-shrink-0"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             <div>
@@ -351,11 +406,11 @@ export function AdminOrdersPage() {
                 }
                 className="w-full p-3 border border-gray-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-primary-500"
               >
-                <option value="new">{lang === 'ar' ? 'جديد' : 'New'}</option>
-                <option value="processing">{lang === 'ar' ? 'قيد التجهيز' : 'Processing'}</option>
-                <option value="confirmed">{lang === 'ar' ? 'مؤكد' : 'Confirmed'}</option>
-                <option value="delivered">{lang === 'ar' ? 'تم التوصيل' : 'Delivered'}</option>
-                <option value="cancelled">{lang === 'ar' ? 'ملغي' : 'Cancelled'}</option>
+                <option value="new">{lang === 'ar' ? '📦طلب جديد ' : 'New'}</option>
+                <option value="processing">{lang === 'ar' ? '🔄جاري تجهيز الطلب' : 'Processing'}</option>
+                <option value="confirmed">{lang === 'ar' ? '🚚الطلب في الطريق' : 'Confirmed'}</option>
+                <option value="delivered">{lang === 'ar' ? '✅تم التوصيل' : 'Delivered'}</option>
+                <option value="cancelled">{lang === 'ar' ? '❌ملغي' : 'Cancelled'}</option>
               </select>
             </div>
 
