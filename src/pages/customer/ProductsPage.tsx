@@ -2,23 +2,27 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
+import { useToast } from '@/contexts/ToastContext';
 import { useCategories, useProducts } from '@/hooks/useData';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductCardSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Input';
 import { Search, SlidersHorizontal, X, PackageSearch, ScanLine } from 'lucide-react';
-import { BarcodeScannerModal } from '@/components/admin/BarcodeScannerModal';
+import { ClientBarcodeScannerModal } from '@/components/ClientBarcodeScannerModal';
 
 export function ProductsPage() {
   const { t, lang } = useLanguage();
   const { isAdmin } = useAuth();
+  const { addToCart } = useCart();
+  const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [showFilters, setShowFilters] = useState(false);
-  const [isScannerOpen, setIsScannerOpen] = useState(false); // حالة فتح وإغلاق ماسح الباركود الذكي
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
-  // فلترة التصنيف بقت بالـ id (مضمون دايمًا)، مش بالـ slug اللي ممكن يكون فاسد في بيانات قديمة
+  // فلترة التصنيف بالـ id
   const categoryId = searchParams.get('category') || '';
   const search = searchParams.get('search') || '';
   const availability = (searchParams.get('availability') as 'all' | 'available') || 'all';
@@ -73,16 +77,14 @@ export function ProductsPage() {
           )}
         </div>
 
-        {/* زر مسح الباركود الذكي (يظهر للأدمن فقط) */}
-        {isAdmin && (
-          <button
-            onClick={() => setIsScannerOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-bold shadow-sm transition-all cursor-pointer"
-          >
-            <ScanLine className="w-5 h-5" />
-            <span>مسح الباركود الذكي ⚡</span>
-          </button>
-        )}
+        {/* زر مسح الباركود الذكي للعملاء */}
+        <button
+          onClick={() => setIsScannerOpen(true)}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-bold shadow-sm transition-all cursor-pointer"
+        >
+          <ScanLine className="w-5 h-5" />
+          <span>البحث من خلال الباركود⚡</span>
+        </button>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
@@ -247,17 +249,15 @@ export function ProductsPage() {
         </div>
       </div>
 
-      {/* مكون الماسح الضوئي الذكي (يظهر للأدمن فقط عند تفعيل الفعالية) */}
-      {isAdmin && (
-        <BarcodeScannerModal 
-          isOpen={isScannerOpen} 
-          onClose={() => setIsScannerOpen(false)} 
-          onSuccess={(msg) => {
-            alert(msg);
-            window.location.reload();
-          }} 
-        />
-      )}
+      {/* ماسح الباركود الخاص بالعميل لإضافة المنتجات للسلة مباشرة */}
+      <ClientBarcodeScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onAddToCart={(product) => {
+          addToCart(product, 1);
+          showToast(lang === 'ar' ? 'تمت الإضافة إلى السلة' : 'Added to cart', 'success');
+        }}
+      />
     </div>
   );
 }
