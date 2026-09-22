@@ -36,7 +36,6 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const images = getProductImages(product);
 
-  // حركة تلقائية للصور كل 3 ثواني
   useEffect(() => {
     if (images.length <= 1) return;
     const interval = setInterval(() => {
@@ -76,9 +75,10 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <>
-      <div className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between transform hover:-translate-y-1">
-        {/* Image Container */}
-        <div className="relative h-44 w-full overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="group bg-white rounded-2xl border border-pink-100/60 shadow-xs hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between h-full transform hover:-translate-y-1">
+        
+        {/* حاوية الصورة على ستايل التصنيفات الفخم (تأخذ المساحة بـ object-cover وتدرج أنيق) */}
+        <div className="relative h-40 sm:h-44 w-full overflow-hidden bg-gray-900 flex items-center justify-center">
           <div className="absolute inset-0 block w-full h-full">
             {images.length > 0 ? (
               images.map((img: string, idx: number) => (
@@ -86,104 +86,111 @@ export function ProductCard({ product }: ProductCardProps) {
                   key={idx}
                   src={img}
                   alt={name || 'Product'}
-                  className={`absolute inset-0 w-full h-full object-contain p-2 bg-white transition-all duration-500 ease-in-out ${
-                    currentImageIndex === idx ? 'opacity-100 scale-100 z-1' : 'opacity-0 scale-95 z-0 pointer-events-none'
+                  className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-700 ease-in-out ${
+                    currentImageIndex === idx ? 'opacity-100 z-1' : 'opacity-0 z-0 pointer-events-none'
                   }`}
                   loading="lazy"
                 />
               ))
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-300">
-                <PackageX className="w-12 h-12" />
+              <div className="w-full h-full flex items-center justify-center text-gray-500 bg-gray-100">
+                <PackageX className="w-10 h-10" />
               </div>
             )}
           </div>
 
-          {/* Stock badge */}
+          {/* تدرج لوني أسفل الصورة تماماً زي كروت التصنيفات لإبراز الفخامة */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+
+          {/* حالة المخزون */}
           <div className="absolute top-2 start-2 z-20">
             {stockStatus === 'out' ? (
-              <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-error-500 text-white shadow-sm">
+              <span className="px-2 py-0.5 text-[9px] font-semibold rounded-full bg-error-500 text-white shadow-xs">
                 {t('outOfStock')}
               </span>
             ) : stockStatus === 'low' ? (
-              <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-warning-500 text-white shadow-sm">
+              <span className="px-2 py-0.5 text-[9px] font-semibold rounded-full bg-warning-500 text-white shadow-xs">
                 {t('lowStock')}
               </span>
             ) : null}
           </div>
 
-          {/* زر العين */}
+          {/* زر العين للمعاينة */}
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowQuickView(true); }}
-            className="absolute top-2 end-2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white shadow-md cursor-pointer z-20 hover:scale-110"
+            className="absolute top-2 end-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-gray-700 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white shadow-md cursor-pointer z-20 hover:scale-110"
             title="معاينة سريعة"
           >
-            <Eye className="w-4 h-4" />
+            <Eye className="w-3.5 h-3.5" />
           </button>
 
-          {/* أسهم التنقل والعداد */}
+          {/* أسهم التنقل للصور المتعددة */}
           {images.length > 1 && (
-            <div className="absolute inset-x-0 bottom-2 flex items-center justify-between px-2 z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="absolute inset-x-0 bottom-2 flex items-center justify-between px-2 z-25 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <button
                 onClick={prevImage}
-                className="w-6 h-6 rounded-full bg-white/95 text-gray-900 shadow-md flex items-center justify-center hover:bg-white pointer-events-auto cursor-pointer"
+                className="w-5 h-5 rounded-full bg-white/95 text-gray-900 shadow-sm flex items-center justify-center hover:bg-white pointer-events-auto cursor-pointer"
               >
-                <ChevronRight className="w-3.5 h-3.5" />
+                <ChevronRight className="w-3 h-3" />
               </button>
               
-              <span className="px-2 py-0.5 text-[9px] font-mono font-bold bg-black/60 text-white rounded-full">
-                {currentImageIndex + 1} / {images.length}
+              <span className="px-1.5 py-0.2 text-[8px] font-mono font-bold bg-black/60 text-white rounded-full">
+                {currentImageIndex + 1}/{images.length}
               </span>
 
               <button
                 onClick={nextImage}
-                className="w-6 h-6 rounded-full bg-white/95 text-gray-900 shadow-md flex items-center justify-center hover:bg-white pointer-events-auto cursor-pointer"
+                className="w-5 h-5 rounded-full bg-white/95 text-gray-900 shadow-sm flex items-center justify-center hover:bg-white pointer-events-auto cursor-pointer"
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
+                <ChevronLeft className="w-3 h-3" />
               </button>
             </div>
           )}
+
+          {/* عنوان المنتج عائم فوق التدرج الداكن أسفل الصورة (بنفس ستايل التصنيفات) */}
+          <div className="absolute inset-x-0 bottom-2 px-3 z-10 pointer-events-none">
+            <Link to={`/products/${product.id}`} className="block pointer-events-auto">
+              <h3 
+                className="font-extrabold text-xs text-white drop-shadow-md line-clamp-1 hover:text-pink-200 transition-colors" 
+                title={name}
+              >
+                {name}
+              </h3>
+            </Link>
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="p-3 flex flex-col justify-between flex-1 space-y-2">
-          <div>
-            <Link to={`/products/${product.id}`}>
-              <h3 className="font-bold text-xs text-gray-900 line-clamp-1 hover:text-primary-600 transition-colors">{name}</h3>
-            </Link>
-            {product.packaging && (
-              <p className="text-[10px] text-gray-400 mt-0.5">{product.packaging}</p>
-            )}
-
-            {/* Price */}
-            <div className="mt-1.5 flex items-baseline justify-between">
-              <div>
-                <span className="text-sm font-extrabold text-primary-600">{price.toFixed(2)}</span>
-                <span className="text-[10px] text-gray-400 ms-1">{t('currency')}</span>
-              </div>
-              {available > 0 && available <= 10 && (
-                <span className="text-[10px] text-warning-600 font-medium">{t('onlyLeft', { count: available })}</span>
-              )}
+        {/* محتوى وتفاصيل الكارت بالأسفل (الأسعار والأزرار) */}
+        <div className="p-2.5 flex flex-col justify-between flex-1 gap-2 bg-white">
+          <div className="flex items-baseline justify-between pt-0.5">
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-sm font-extrabold text-primary-600 font-mono">
+                {price.toFixed(2)}
+              </span>
+              <span className="text-[10px] text-gray-400 ms-0.5">{t('currency')}</span>
             </div>
+            {product.packaging && (
+              <span className="text-[10px] text-gray-500 font-medium truncate max-w-[100px]">{product.packaging}</span>
+            )}
           </div>
 
-          {/* Quantity + Add to cart */}
-          <div className="pt-2 border-t border-gray-50 space-y-1.5">
+          {/* أزرار الكمية والإضافة للسلة */}
+          <div className="pt-1.5 border-t border-gray-100 flex flex-col gap-1.5 mt-auto">
             {stockStatus !== 'out' ? (
               <>
-                <div className="flex justify-center">
+                <div className="flex justify-center w-full">
                   <QuantitySelector value={qty} onChange={setQty} max={available} min={1} size="sm" />
                 </div>
                 <button
                   onClick={handleAddToCart}
-                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary-600 text-white text-xs font-semibold rounded-xl hover:bg-primary-700 transition-all active:scale-95 cursor-pointer shadow-sm"
+                  className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 px-2 bg-primary-600 text-white text-xs font-semibold rounded-xl hover:bg-primary-700 active:scale-95 transition-all shadow-xs cursor-pointer"
                 >
                   <ShoppingBag className="w-3.5 h-3.5" />
                   <span>{t('addToCart')}</span>
                 </button>
               </>
             ) : (
-              <button disabled className="w-full py-1.5 bg-gray-100 text-gray-400 text-xs font-semibold rounded-xl cursor-not-allowed">
+              <button disabled className="w-full py-1.5 bg-gray-100 text-gray-400 text-xs font-medium rounded-xl cursor-not-allowed">
                 {t('outOfStock')}
               </button>
             )}
@@ -191,7 +198,6 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
       </div>
 
-      {/* Quick view modal */}
       {showQuickView && (
         <QuickViewModal product={product} onClose={() => setShowQuickView(false)} />
       )}
@@ -231,17 +237,14 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-xs" onClick={onClose}>
       <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row animate-scale-in" onClick={e => e.stopPropagation()}>
-        
-        {/* زر الإغلاق */}
         <button
           onClick={onClose}
-          className="absolute top-4 end-4 z-30 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center cursor-pointer shadow-sm transition-all"
+          className="absolute top-3 end-3 z-30 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center cursor-pointer shadow-xs transition-all"
         >
           <X className="w-4 h-4" />
         </button>
 
-        {/* قسم الصورة الواضحة وكبيرة */}
-        <div className="md:w-1/2 aspect-square bg-gray-50 relative flex items-center justify-center overflow-hidden">
+        <div className="md:w-1/2 aspect-square bg-white relative flex items-center justify-center overflow-hidden border-b md:border-b-0 md:border-e border-gray-100">
           {images.length > 0 ? (
             images.map((img: string, idx: number) => (
               <img
@@ -280,48 +283,47 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
           )}
         </div>
 
-        {/* قسم تفاصيل ووصف المنتج كاملاً مع إمكانية التمرير (Scroll) */}
-        <div className="md:w-1/2 p-6 flex flex-col justify-between max-h-[90vh] overflow-y-auto">
-          <div className="space-y-3">
-            <h3 className="text-lg font-extrabold text-gray-900 pe-8">{name}</h3>
+        <div className="md:w-1/2 p-5 flex flex-col justify-between max-h-[90vh] overflow-y-auto">
+          <div className="space-y-2.5">
+            <h3 className="text-base font-extrabold text-gray-900 pe-8">{name}</h3>
             {product.packaging && (
-              <span className="inline-block px-2.5 py-0.5 bg-purple-50 text-purple-700 text-xs font-bold rounded-full">
+              <span className="inline-block px-2.5 py-0.5 bg-primary-50 text-primary-700 text-xs font-bold rounded-full">
                 {product.packaging}
               </span>
             )}
             
             {description && (
-              <div className="mt-3 pt-3 border-t border-gray-100">
+              <div className="mt-2.5 pt-2.5 border-t border-gray-100">
                 <h4 className="text-xs font-bold text-gray-700 mb-1">:تفاصيل المنتج</h4>
                 <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{description}</p>
               </div>
             )}
           </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-100 space-y-4">
+          <div className="mt-4 pt-3 border-t border-gray-100 space-y-3">
             <div className="flex items-baseline justify-between">
               <div>
-                <span className="text-2xl font-extrabold text-primary-600">{price.toFixed(2)}</span>
+                <span className="text-xl font-extrabold text-primary-600">{price.toFixed(2)}</span>
                 <span className="text-xs text-gray-400 ms-1">{t('currency')}</span>
               </div>
               <span className="text-xs font-bold text-gray-700">{t('total')}: <span className="text-primary-600 font-mono text-sm">{total.toFixed(2)}</span></span>
             </div>
 
             {stockStatus !== 'out' ? (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 <div className="flex justify-center">
                   <QuantitySelector value={qty} onChange={setQty} max={available} size="sm" />
                 </div>
                 <button
                   onClick={handleAddToCart}
-                  className="w-full py-2.5 bg-primary-600 text-white text-xs font-bold rounded-xl hover:bg-primary-700 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-2 bg-primary-600 text-white text-xs font-bold rounded-xl hover:bg-primary-700 transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-2"
                 >
                   <ShoppingBag className="w-4 h-4" />
                   <span>{t('addToCart')}</span>
                 </button>
               </div>
             ) : (
-              <button disabled className="w-full py-2.5 bg-gray-100 text-gray-400 text-xs font-semibold rounded-xl cursor-not-allowed">
+              <button disabled className="w-full py-2 bg-gray-100 text-gray-400 text-xs font-semibold rounded-xl cursor-not-allowed">
                 {t('outOfStock')}
               </button>
             )}
