@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
@@ -10,6 +10,8 @@ import { Eye, Search, Phone, MapPin, FileText, ShoppingCart, Clock, CheckCircle,
 export function AdminOrdersPage() {
   const { t, lang } = useLanguage();
   const { showToast } = useToast();
+  const [searchParams] = useSearchParams();
+  const orderNumberParam = searchParams.get('order');
 
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,12 +19,22 @@ export function AdminOrdersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all'); // الفلتر السريع
 
-  // حالة صورة المنتج المكبّرة (Lightbox) — نص الرابط لو مفتوحة، أو null لو مقفولة
+  // حالة صورة المنتج المكبّرة (Lightbox)
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  // فتح الطلب تلقائياً لو جاي من إشعار برابط فيه ?order=CEL-XXXXX
+  useEffect(() => {
+    if (orderNumberParam && orders.length > 0) {
+      const found = orders.find(o => o.order_number === orderNumberParam);
+      if (found) {
+        setSelectedOrder(found);
+      }
+    }
+  }, [orderNumberParam, orders]);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -78,10 +90,7 @@ export function AdminOrdersPage() {
 
     if (!confirmDelete) return;
 
-    // أولاً: حذف عناصر الطلب المرتبطة لتجنب قيود المفتاح الأجنبي (Foreign Key)
     await supabase.from('order_items').delete().eq('order_id', orderId);
-
-    // ثانياً: حذف الطلب نفسه
     const { error } = await supabase.from('orders').delete().eq('id', orderId);
 
     if (error) {
@@ -110,7 +119,6 @@ export function AdminOrdersPage() {
     return matchesSearch && order.status === activeTab;
   });
 
-  // حساب أعداد كل حالة للإحصائيات السريعة والتابات
   const counts = {
     all: orders.length,
     new: orders.filter(o => o.status === 'new').length,
@@ -533,7 +541,7 @@ export function AdminOrdersPage() {
         </div>
       )}
 
-      {/* Image Lightbox — يظهر فوق كل حاجة لما تدوس على أي صورة منتج داخل تفاصيل الطلب */}
+      {/* Image Lightbox */}
       {zoomedImage && (
         <div
           className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 cursor-zoom-out animate-fade-in"
