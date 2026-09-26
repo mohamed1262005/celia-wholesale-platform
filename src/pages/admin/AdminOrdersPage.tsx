@@ -5,7 +5,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatDate, formatPrice } from '@/lib/pricing';
-import { Eye, Search, Phone, MapPin, FileText, ShoppingCart, Clock, CheckCircle, Truck, XCircle, Trash2 } from 'lucide-react';
+import { Eye, Search, Phone, MapPin, FileText, ShoppingCart, Clock, CheckCircle, Truck, XCircle, Trash2, X } from 'lucide-react';
 
 export function AdminOrdersPage() {
   const { t, lang } = useLanguage();
@@ -16,6 +16,9 @@ export function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all'); // الفلتر السريع
+
+  // حالة صورة المنتج المكبّرة (Lightbox) — نص الرابط لو مفتوحة، أو null لو مقفولة
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -472,11 +475,18 @@ export function AdminOrdersPage() {
                   >
                     <div className="flex items-center gap-3">
                       {item.product_image && (
-                        <img
-                          src={item.product_image}
-                          alt=""
-                          className="w-12 h-12 rounded-lg object-cover"
-                        />
+                        <button
+                          type="button"
+                          onClick={() => setZoomedImage(item.product_image)}
+                          className="flex-shrink-0 cursor-zoom-in"
+                          title={lang === 'ar' ? 'اضغط لتكبير الصورة' : 'Click to zoom'}
+                        >
+                          <img
+                            src={item.product_image}
+                            alt=""
+                            className="w-12 h-12 rounded-lg object-cover hover:opacity-80 hover:ring-2 hover:ring-primary-400 transition-all"
+                          />
+                        </button>
                       )}
                       <div>
                         <p className="text-sm font-semibold text-gray-900">
@@ -520,6 +530,28 @@ export function AdminOrdersPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Image Lightbox — يظهر فوق كل حاجة لما تدوس على أي صورة منتج داخل تفاصيل الطلب */}
+      {zoomedImage && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 cursor-zoom-out animate-fade-in"
+          onClick={() => setZoomedImage(null)}
+        >
+          <button
+            onClick={() => setZoomedImage(null)}
+            className="absolute top-4 sm:top-6 end-4 sm:end-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+            aria-label={lang === 'ar' ? 'إغلاق' : 'Close'}
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <img
+            src={zoomedImage}
+            alt=""
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain cursor-default"
+          />
         </div>
       )}
     </div>

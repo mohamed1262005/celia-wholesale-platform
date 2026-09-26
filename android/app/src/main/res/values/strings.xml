@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Celia Premium Sweets</string>
+    <string name="title_activity_main">Celia Premium Sweets</string>
+    <string name="package_name">com.celia.wholesale</string>
+    <string name="custom_url_scheme">com.celia.wholesale</string>
+</resources>
