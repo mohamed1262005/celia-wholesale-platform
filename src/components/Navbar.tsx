@@ -6,11 +6,21 @@ import { useCart } from '@/contexts/CartContext';
 import { useNotifications } from '@/hooks/useData';
 import { Logo } from '@/components/Logo';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
-import { ShoppingBag, Bell, User, LogOut, Menu, X, Search, Package, LayoutDashboard, CheckCheck, Check } from 'lucide-react';
+import { ShoppingBag, Bell, User, LogOut, Menu, X, Search, Package, LayoutDashboard, CheckCheck, Check, MessageCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
+const STATUS_LABELS_AR: Record<string, string> = {
+  new: 'طلب جديد',
+  processing: 'قيد التجهيز',
+  confirmed: 'في الطريق إليك',
+  delivered: 'تم التوصيل بنجاح',
+  cancelled: 'تم إلغاء الطلب',
+};
+
+const WHATSAPP_NUMBER = '201094383536';
+
 export function Navbar() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { user, profile, isAdmin } = useAuth();
   const { totalItems } = useCart();
   const navigate = useNavigate();
@@ -52,6 +62,44 @@ export function Navbar() {
     navigate('/');
   };
 
+  const getNotificationDisplay = (notif: any) => {
+    const rawMsg = notif.message || '';
+    const statusMatch = rawMsg.match(/Status:\s*([A-Za-z]+)/i);
+    const statusRaw = statusMatch ? statusMatch[1].toLowerCase() : '';
+    const arabicStatus = STATUS_LABELS_AR[statusRaw] || (lang === 'ar' ? 'تحديث جديد على الطلب' : 'Order Update');
+
+    const orderIdMatch = rawMsg.match(/Order ID:\s*([a-zA-Z0-9-]+)/i);
+    const extractedId = orderIdMatch ? orderIdMatch[1] : null;
+
+    if (lang === 'ar') {
+      return {
+        title: 'تحديث حالة الطلب',
+        message: `حالة طلبك الحالية: ${arabicStatus}`,
+        orderId: extractedId,
+      };
+    }
+
+    return {
+      title: notif.title || 'Order Update',
+      message: rawMsg,
+      orderId: extractedId,
+    };
+  };
+
+  const handleNotificationClick = async (n: any, orderId: string | null) => {
+    const isReadStatus = n.read ?? (n as any).is_read ?? false;
+    if (!isReadStatus && n.id) {
+      markAsRead(n.id);
+    }
+    setNotifOpen(false);
+    
+    if (orderId) {
+      navigate(`/orders/${orderId}`);
+    } else {
+      navigate('/notifications');
+    }
+  };
+
   const navLinks = [
     { to: '/', label: t('home') },
     { to: '/products', label: t('products') },
@@ -63,7 +111,6 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2">
           
-          {/* الجانب الأيسر: زر القائمة للموبايل + اللوجو */}
           <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -77,7 +124,6 @@ export function Navbar() {
             </div>
           </div>
 
-          {/* روابط التنقل للشاشات الكبيرة فقط */}
           <nav className="hidden md:flex items-center gap-1">
             {navLinks.map(link => (
               <Link
@@ -94,7 +140,6 @@ export function Navbar() {
             ))}
           </nav>
 
-          {/* شريط البحث */}
           <form onSubmit={handleSearch} className="hidden sm:flex flex-1 max-w-xs mx-2">
             <div className="relative w-full">
               <Search className="absolute inset-y-0 start-0 ms-3 my-auto w-4 h-4 text-gray-400" />
@@ -108,11 +153,11 @@ export function Navbar() {
             </div>
           </form>
 
-          {/* أزرار الإجراءات اليمنى */}
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            
             <LanguageSwitcher />
 
-            {/* زر لوحة التحكم (يظهر للآدمن) */}
+            {/* زر لوحة التحكم للشاشات الكبيرة فقط */}
             {isAdmin && (
               <Link
                 to="/admin"
@@ -124,18 +169,22 @@ export function Navbar() {
               </Link>
             )}
 
+            {/* زر واتساب للشاشات الكبيرة */}
+            <a
+              href={`https://wa.me/${WHATSAPP_NUMBER}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors cursor-pointer"
+              title={lang === 'ar' ? 'تواصل معنا عبر واتساب' : 'Contact us on WhatsApp'}
+            >
+              <MessageCircle className="w-5 h-5" />
+            </a>
+
             {/* الإشعارات */}
             {user && (
               <div className="relative" ref={notifRef}>
                 <button
-                  onClick={async () => {
-                    const nextState = !notifOpen;
-                    setNotifOpen(nextState);
-                    if (nextState && unreadCount > 0) {
-                      await supabase.rpc('mark_user_notifications_as_read', { p_user_id: user.id });
-                      notifications.forEach(n => { n.read = true; });
-                    }
-                  }}
+                  onClick={() => setNotifOpen(!notifOpen)}
                   className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
                 >
                   <Bell className="w-5 h-5" />
@@ -147,37 +196,54 @@ export function Navbar() {
                 </button>
 
                 {notifOpen && (
-                  <div className="fixed sm:absolute left-1/2 sm:left-auto sm:end-0 -translate-x-1/2 sm:translate-x-0 top-20 sm:top-auto sm:mt-2 w-[92vw] sm:w-80 max-w-sm bg-white rounded-2xl shadow-2xl sm:shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
-                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                      <h4 className="font-bold text-sm text-gray-900">{t('notifications')}</h4>
-                      <Link to="/notifications" className="text-xs text-primary-600 font-semibold hover:underline">
+                  <div className="fixed inset-x-4 top-20 sm:absolute sm:inset-x-auto sm:end-0 sm:mt-2 w-auto sm:w-96 max-w-lg mx-auto bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-scale-in">
+                    <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                      <h4 className="font-extrabold text-sm text-gray-900">{t('notifications')}</h4>
+                      <Link to="/notifications" className="text-xs text-primary-600 font-bold hover:underline">
                         {t('viewAll')}
                       </Link>
                     </div>
-                    <div className="max-h-80 overflow-y-auto">
+                    <div className="max-h-[70vh] overflow-y-auto p-3 space-y-2.5">
                       {notifications.length === 0 ? (
                         <p className="px-4 py-8 text-center text-sm text-gray-400">{t('noNotifications')}</p>
                       ) : (
                         notifications.slice(0, 5).map(n => {
                           const isReadStatus = n.read ?? (n as any).is_read ?? false;
+                          const display = getNotificationDisplay(n);
                           return (
-                            <button
+                            <div
                               key={n.id}
-                              onClick={() => { if (!isReadStatus) markAsRead(n.id); navigate('/notifications'); }}
-                              className={`w-full text-start px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors relative ${!isReadStatus ? 'bg-primary-50/30' : ''}`}
+                              className={`rounded-2xl border p-4 transition-all shadow-2xs ${
+                                !isReadStatus ? 'bg-primary-50/60 border-primary-200' : 'bg-white border-gray-100'
+                              }`}
                             >
-                              <div className="flex items-start justify-between gap-2">
-                                <p className="text-sm font-semibold text-gray-900 break-words">{n.title}</p>
-                                <span className="flex items-center text-[10px] font-bold text-gray-400 shrink-0 mt-0.5">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-start gap-3 min-w-0">
+                                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                                    display.orderId ? 'bg-primary-100 text-primary-600' : 'bg-gray-100 text-gray-500'
+                                  }`}>
+                                    {display.orderId ? <Package className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+                                  </div>
+                                  <div className="min-w-0 space-y-1">
+                                    <p className="text-xs sm:text-sm font-extrabold text-gray-900">{display.title}</p>
+                                    <p className="text-xs sm:text-sm text-gray-700 leading-relaxed break-words">{display.message}</p>
+                                  </div>
+                                </div>
+                                <span className="flex items-center text-[10px] font-bold text-gray-400 shrink-0 mt-1">
                                   {isReadStatus ? (
-                                    <span className="inline-flex items-center text-emerald-600 gap-0.5"><CheckCheck className="w-3.5 h-3.5" /> مقروء</span>
+                                    <span className="inline-flex items-center text-emerald-600"><CheckCheck className="w-4 h-4" /></span>
                                   ) : (
-                                    <span className="inline-flex items-center text-amber-500 gap-0.5"><Check className="w-3.5 h-3.5" /> جديد</span>
+                                    <span className="inline-flex items-center text-amber-500"><Check className="w-4 h-4" /></span>
                                   )}
                                 </span>
                               </div>
-                              <p className="text-xs text-gray-500 mt-1 whitespace-pre-wrap break-words">{n.message}</p>
-                            </button>
+                              <button
+                                onClick={() => handleNotificationClick(n, display.orderId)}
+                                className="w-full mt-3 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+                              >
+                                {lang === 'ar' ? 'عرض تفاصيل الطلب' : 'View Order Details'}
+                              </button>
+                            </div>
                           );
                         })
                       )}
@@ -187,7 +253,6 @@ export function Navbar() {
               </div>
             )}
 
-            {/* السلة */}
             <Link
               to="/cart"
               className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
@@ -200,7 +265,6 @@ export function Navbar() {
               )}
             </Link>
 
-            {/* البروفايل أو تسجيل الدخول */}
             {user ? (
               <div className="relative" ref={profileRef}>
                 <button
@@ -213,7 +277,7 @@ export function Navbar() {
                 </button>
 
                 {profileOpen && (
-                  <div className="absolute end-0 mt-2 w-56 bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden animate-slide-down z-50">
+                  <div className="absolute end-0 mt-2 w-56 bg-white rounded-2xl shadow-float border border-gray-100 overflow-hidden z-50 animate-slide-down">
                     <div className="px-4 py-3 border-b border-gray-100">
                       <p className="text-sm font-bold text-gray-900 truncate">{profile?.full_name}</p>
                       <p className="text-xs text-gray-400 truncate">{profile?.email}</p>
@@ -249,7 +313,6 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* شريط البحث الصغير للهواتف */}
         <div className="sm:hidden pb-3 pt-1">
           <form onSubmit={handleSearch}>
             <div className="relative w-full">
@@ -266,9 +329,9 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* قائمة الموبايل المنسدلة المرتبة والصغيرة */}
+      {/* قائمة الموبايل المنسدلة (تحتوي على روابط التنقل، لوحة التحكم للمشرف، وزر واتساب لمنع التكدس) */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-full start-0 w-full bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-xl animate-slide-down z-50 px-4 py-3 space-y-1.5">
+        <div className="md:hidden absolute top-full start-0 w-full bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-xl z-50 px-4 py-3 space-y-1.5 animate-slide-down">
           {navLinks.map(link => (
             <Link
               key={link.to}
@@ -284,17 +347,29 @@ export function Navbar() {
             </Link>
           ))}
 
-          {/* زر لوحة التحكم للموبايل لو الآدمن مسجل دخول */}
+          {/* لوحة التحكم داخل القائمة للمشرف */}
           {isAdmin && (
             <Link
               to="/admin"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-all shadow-xs mt-1"
+              className="flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-all shadow-xs mt-2"
             >
               <LayoutDashboard className="w-4 h-4" />
               <span>{t('dashboard')}</span>
             </Link>
           )}
+
+          {/* زر واتساب داخل القائمة لمنع التكدس في الشريط العلوي للموبايل */}
+          <a
+            href={`https://wa.me/${WHATSAPP_NUMBER}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all shadow-xs"
+          >
+            <MessageCircle className="w-4 h-4 text-emerald-600" />
+            <span>{lang === 'ar' ? 'تواصل عبر واتساب' : 'WhatsApp Support'}</span>
+          </a>
         </div>
       )}
     </header>

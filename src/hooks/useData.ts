@@ -189,37 +189,36 @@ export function useNotifications(userId?: string) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    let query = supabase
-      .from('notifications')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (userId) {
-      query = query.or(`user_id.eq.${userId},user_id.is.null`);
-    } else {
-      query = query.is('user_id', null);
+    if (!userId) {
+      setNotifications([]);
+      setLoading(false);
+      return;
     }
 
-    const { data } = await query;
-    setNotifications((data as AppNotification[]) || []);
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setNotifications(data as AppNotification[]);
+    } else {
+      setNotifications([]);
+    }
     setLoading(false);
   }, [userId]);
 
   useEffect(() => { load(); }, [load]);
 
   const markAsRead = useCallback(async (id: string) => {
-    await supabase.from('notifications').update({ is_read: true, read: true }).eq('id', id);
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true, read: true } : n));
   }, []);
 
   const markAllAsRead = useCallback(async () => {
-    let query = supabase.from('notifications').update({ is_read: true, read: true });
-    if (userId) {
-      query = query.or(`user_id.eq.${userId},user_id.is.null`);
-    } else {
-      query = query.is('user_id', null);
-    }
-    await query;
+    if (!userId) return;
+    await supabase.from('notifications').update({ is_read: true }).eq('user_id', userId);
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true, read: true })));
   }, [userId]);
 

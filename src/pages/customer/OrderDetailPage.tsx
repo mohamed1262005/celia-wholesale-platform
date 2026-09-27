@@ -24,11 +24,29 @@ export function OrderDetailPage() {
   useEffect(() => {
     if (!id) return;
     (async () => {
-      const { data } = await supabase
-        .from('orders')
-        .select('*, order_items:order_items(*)')
-        .eq('id', id)
-        .maybeSingle();
+      setLoading(true);
+      let data = null;
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      
+      if (uuidRegex.test(id)) {
+        const res = await supabase
+          .from('orders')
+          .select('*, order_items:order_items(*)')
+          .eq('id', id)
+          .maybeSingle();
+        data = res.data;
+      }
+
+      if (!data) {
+        const res = await supabase
+          .from('orders')
+          .select('*, order_items:order_items(*)')
+          .or(`order_number.ilike.%${id}%,id.ilike.%${id}%`)
+          .maybeSingle();
+        data = res.data;
+      }
+
       setOrder(data as Order | null);
       setLoading(false);
     })();
@@ -40,9 +58,17 @@ export function OrderDetailPage() {
 
   if (!order) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <p className="text-gray-500 mb-4">{t('noOrders')}</p>
-        <Link to="/orders" className="text-primary-600 font-semibold">{t('myOrders')}</Link>
+      <div className="max-w-md mx-auto px-4 py-24 text-center space-y-4">
+        <div className="w-16 h-16 bg-primary-50 text-primary-600 rounded-2xl flex items-center justify-center mx-auto shadow-xs">
+          <Package className="w-8 h-8" />
+        </div>
+        <h2 className="text-lg font-bold text-gray-900">الطلب غير موجود أو تم إزالتـه</h2>
+        <p className="text-xs text-gray-500">عذراً، لم نتمكن من العثور على تفاصيل هذا الطلب. يمكنك متابعة طلباتك الحالية من صفحة طلباتي.</p>
+        <div>
+          <Link to="/orders" className="inline-block px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition-all shadow-md">
+            {t('myOrders')}
+          </Link>
+        </div>
       </div>
     );
   }
@@ -66,15 +92,13 @@ export function OrderDetailPage() {
   const statusTimeline: OrderStatus[] = ['new', 'processing', 'confirmed', 'delivered'];
   const currentIdx = order.status === 'cancelled' ? -1 : statusTimeline.indexOf(order.status);
 
-  // مصفوفة الأيقونات المناسبة لكل خطوة في سجل الطلب
   const timelineIcons = [
-    Sparkles, // جديد (New)
-    Clock,    // قيد المعالجة (Processing)
-    CheckCircle, // مؤكد (Confirmed)
-    Truck     // تم التوصيل (Delivered)
+    Sparkles,
+    Clock,
+    CheckCircle,
+    Truck
   ];
 
-  // حساب الإجمالي الكلي بأمان لمنع ظهور NaN
   const calculatedSubtotal = order.order_items?.reduce((sum, item: any) => {
     const itemTotal = Number(item.total ?? (Number(item.unit_price || 0) * Number(item.quantity || 1))) || 0;
     return sum + itemTotal;
@@ -95,7 +119,6 @@ export function OrderDetailPage() {
         <StatusBadge status={order.status} />
       </div>
 
-      {/* Timeline with Icons */}
       {order.status !== 'cancelled' && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5 mb-6">
           <h3 className="font-bold text-sm text-gray-900 mb-4">{t('orderTimeline')}</h3>
@@ -125,7 +148,6 @@ export function OrderDetailPage() {
       )}
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Items */}
         <div className="md:col-span-2">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100">
@@ -168,7 +190,6 @@ export function OrderDetailPage() {
           </div>
         </div>
 
-        {/* Customer info */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5">
           <h3 className="font-bold text-sm text-gray-900 mb-3">{t('customerInfo')}</h3>
           <div className="space-y-2.5 text-sm">
@@ -189,7 +210,6 @@ export function OrderDetailPage() {
           </div>
         </div>
 
-        {/* Delivery info */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5">
           <h3 className="font-bold text-sm text-gray-900 mb-3">{t('deliveryInfo')}</h3>
           <div className="space-y-2 text-sm text-gray-600">
@@ -210,7 +230,6 @@ export function OrderDetailPage() {
         </div>
       </div>
 
-      {/* Cancel button */}
       {canCancel && (
         <div className="mt-6">
           <Button variant="danger" onClick={() => setCancelModal(true)}>
@@ -220,7 +239,6 @@ export function OrderDetailPage() {
         </div>
       )}
 
-      {/* Cancel confirmation */}
       <Modal open={cancelModal} onClose={() => setCancelModal(false)} title={t('cancelOrder')} size="sm">
         <p className="text-sm text-gray-600 mb-5">
           {lang === 'ar' ? 'هل أنت متأكد من إلغاء هذا الطلب؟' : 'Are you sure you want to cancel this order?'}
