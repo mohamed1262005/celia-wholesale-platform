@@ -17,7 +17,7 @@ const STATUS_LABELS_AR: Record<string, string> = {
   cancelled: 'تم إلغاء الطلب',
 };
 
-const WHATSAPP_NUMBER = '201094383536';
+const WHATSAPP_NUMBER = '201000359525';
 
 export function Navbar() {
   const { t, lang } = useLanguage();

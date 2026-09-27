@@ -73,8 +73,9 @@ export function CartPage() {
                       {item.product.packaging && (
                         <p className="text-xs font-medium text-gray-400 mt-0.5 truncate">{item.product.packaging}</p>
                       )}
+                      {/* السعر للوحدة الواحدة (بدون كلمة وحدة، والجنيه بعد الرقم) */}
                       <p className="text-xs font-bold text-primary-600 mt-1.5 bg-primary-50/60 inline-block px-2.5 py-1 rounded-lg">
-                        {item.applicablePrice.toFixed(2)} {t('currency')} / {t('perUnit')}
+                        {item.applicablePrice.toFixed(2)} {t('currency')}
                       </p>
                     </div>
                     <button
@@ -99,6 +100,7 @@ export function CartPage() {
                         <p className="text-[11px] font-bold text-warning-600 mt-1">الكمية المتاحة كحد أقصى: {available}</p>
                       )}
                     </div>
+                    {/* إجمالي سعر المنتج (الجنيه بعد الرقم) */}
                     <div className="text-start sm:text-end flex sm:flex-col justify-between items-center sm:items-end w-full sm:w-auto">
                       <p className="text-[11px] font-bold text-gray-400">{t('total')}</p>
                       <p className="text-base sm:text-lg font-black text-primary-600">
@@ -139,7 +141,10 @@ export function CartPage() {
               <div className="border-t border-dashed border-gray-200 pt-3">
                 <div className="flex justify-between items-center">
                   <span className="font-extrabold text-sm sm:text-base text-gray-900">{t('total')}</span>
-                  <span className="text-xl sm:text-2xl font-black text-primary-600">{subtotal.toFixed(2)} <span className="text-xs font-bold">{t('currency')}</span></span>
+                  {/* الإجمالي النهائي (الجنيه بعد الرقم) */}
+                  <span className="text-xl sm:text-2xl font-black text-primary-600">
+                    {subtotal.toFixed(2)} <span className="text-xs font-bold">{t('currency')}</span>
+                  </span>
                 </div>
               </div>
             </div>
