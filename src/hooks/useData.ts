@@ -73,10 +73,15 @@ export function useProducts(filters?: {
         pricing_tiers (*)
       `);
 
-    if (sort === 'name') {
+    // ⚡ الترتيب المباشر والصحيح من قاعدة البيانات بناءً على الأعمدة الفعلية
+    if (sort === 'price_low') {
+      query = query.order('price', { ascending: true });
+    } else if (sort === 'price_high') {
+      query = query.order('price', { ascending: false });
+    } else if (sort === 'name') {
       query = query.order('name_ar', { ascending: true });
     } else {
-      query = query.order('id', { ascending: false });
+      query = query.order('created_at', { ascending: false });
     }
 
     const { data, error } = await query;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,43 +6,8 @@ import { useCategories, useProducts } from '@/hooks/useData';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductCardSkeleton, CategoryCardSkeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
-import { ArrowRight, Truck, ShieldCheck, TrendingUp, Sparkles, FolderPlus, LayoutDashboard, ChevronLeft, ChevronRight } from 'lucide-react';
-import celiaImg from '../../celia.png';
-import secondImg from '../../images.jpeg';
-import orderImg from '../../order.jpeg';
-
-const HERO_SLIDES = [
-  {
-    id: 1,
-    titleAr: 'حلويات متميزة، طلبات الجملة بكل سهولة',
-    titleEn: 'Premium Sweets, Wholesale Orders Made Easy',
-    subtitleAr: 'اطلب الحلويات عالية الجودة بأسعار جملة تنافسية، أسعار حسب الكمية، مخزون فوري، وتوصيل سريع',
-    subtitleEn: 'Order top-quality sweets at competitive wholesale prices, instant stock, and fast delivery',
-    image: secondImg,
-    tagAr: '✨ منصة الجملة للطلب المتميز',
-    tagEn: 'Wholesale Platform for Premium Orders ✨',
-  },
-  {
-    id: 2,
-    titleAr: 'عروض خاصة على الشوكولاتة والمقرمشات',
-    titleEn: 'Special Offers on Chocolate & Snacks',
-    subtitleAr: 'وفر أكثر مع أسعار الكميات وتشكيلة واسعة من أشهر البراندات العالمية والمحلية',
-    subtitleEn: 'Save more with bulk pricing and a wide selection of top global and local brands',
-    image: celiaImg,
-    tagAr: 'خصومات الجملة الكبرى 🚀',
-    tagEn: 'Major Wholesale Discounts 🚀',
-  },
-  {
-    id: 3,
-    titleAr: 'سرعة في التوصيل وضمان الجودة',
-    titleEn: 'Fast Delivery & Quality Assured',
-    subtitleAr: 'نصلك أينما كنت لتلبية احتياجات متجرك أو نشاطك التجاري بأفضل الأسعار',
-    subtitleEn: 'Delivering wherever you are to meet your store or business needs at best prices',
-    image: orderImg, 
-    tagAr: 'خدمة موثوقة ومضمونة 🛡️',
-    tagEn: 'Trusted & Reliable Service 🛡️',
-  },
-];
+import { ArrowRight, Truck, ShieldCheck, TrendingUp, Sparkles, FolderPlus, ShoppingCart, LayoutGrid } from 'lucide-react';
+import celiaImg from '../../celia.jpeg';
 
 export function HomePage() {
   const { t, lang } = useLanguage();
@@ -50,17 +15,8 @@ export function HomePage() {
   const { categories, loading: catLoading } = useCategories();
   const { products, loading: prodLoading } = useProducts({ sort: 'newest' });
 
-  const [currentSlide, setCurrentSlide] = useState(0);
-
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-    }, 4000);
-    return () => clearInterval(timer);
   }, []);
 
   const featuredProducts = products.slice(0, 8);
@@ -84,105 +40,86 @@ export function HomePage() {
   return (
     <div className="w-full max-w-full overflow-x-hidden box-border pb-16">
       
-      {/* Hero Slider */}
-      <section className="relative w-full overflow-hidden bg-gradient-to-br from-primary-50/80 via-white to-secondary-50/80 py-3 sm:py-6">
+      {/* Hero Section */}
+      <section className="relative w-full overflow-hidden bg-white py-3 sm:py-5">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-md bg-white border border-pink-100 group">
-            <div className="relative min-h-[380px] sm:min-h-[420px] flex items-center">
-              {HERO_SLIDES.map((slide, index) => (
-                <div
-                  key={slide.id}
-                  className={`absolute inset-0 flex flex-col lg:grid lg:grid-cols-2 gap-4 items-center p-4 sm:p-10 transition-opacity duration-700 ease-in-out ${
-                    currentSlide === index ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
-                  }`}
-                >
-                  {/* النصوص */}
-                  <div className="text-center lg:text-start space-y-2.5 sm:space-y-4 z-10 w-full">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-100 text-primary-700 text-[11px] font-semibold mx-auto lg:mx-0">
-                      <Sparkles className="w-3 h-3" />
-                      <span>{lang === 'ar' ? slide.tagAr : slide.tagEn}</span>
-                    </div>
-                    <h1 className="text-lg sm:text-2xl lg:text-4xl font-extrabold text-gray-900 leading-snug">
-                      {lang === 'ar' ? slide.titleAr : slide.titleEn}
-                    </h1>
-                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed max-w-xl mx-auto lg:mx-0 line-clamp-3">
-                      {lang === 'ar' ? slide.subtitleAr : slide.subtitleEn}
-                    </p>
-                    
-                    <div className="flex flex-row gap-2 justify-center lg:justify-start pt-1">
-                      <Link to="/products" className="flex-1 sm:flex-none">
-                        <Button size="sm" className="w-full sm:w-auto text-xs py-2">
-                          {t('shopNow')}
-                          <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
-                        </Button>
-                      </Link>
-                      <Link to="/categories" className="flex-1 sm:flex-none">
-                        <Button size="sm" variant="outline" className="w-full sm:w-auto text-xs py-2">
-                          {t('browseCatalog')}
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-
-                  {/* صورة البانر */}
-                  <div className="w-full relative px-2 sm:px-0">
-                    <div className="relative h-36 sm:h-56 lg:aspect-square rounded-xl sm:rounded-2xl overflow-hidden shadow-inner bg-gray-50 flex items-center justify-center">
-                      <img
-                        src={slide.image}
-                        alt="Hero Banner"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
+          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-white border border-pink-100 p-4 sm:p-6 shadow-xs flex flex-col gap-4">
+            
+            {/* 1. صورة البانر كاملة بدون قص */}
+            <div className="w-full relative rounded-2xl overflow-hidden bg-pink-50/20 border border-pink-100 flex items-center justify-center p-1">
+              <img
+                src={celiaImg}
+                alt="Celia Premium Sweets Banner"
+                className="w-full h-auto max-h-[340px] object-contain rounded-xl"
+              />
             </div>
 
-            {/* أزرار التنقل الجانبية - مخفية على الموبايل وتظهر على الكمبيوتر عند الهوفر */}
-            <button
-              onClick={() => setCurrentSlide((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)}
-              className="absolute start-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-gray-800 shadow-md hidden lg:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-              aria-label="Previous Slide"
-            >
-              <ChevronRight className="w-4 h-4 rtl:rotate-180" />
-            </button>
-            <button
-              onClick={() => setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length)}
-              className="absolute end-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-gray-800 shadow-md hidden lg:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-              aria-label="Next Slide"
-            >
-              <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
-            </button>
-
-            {/* نقاط التنقل في الأسفل */}
-            <div className="absolute bottom-2.5 inset-x-0 z-20 flex justify-center gap-1.5">
-              {HERO_SLIDES.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentSlide(idx)}
-                  className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                    currentSlide === idx ? 'w-5 bg-primary-600' : 'w-1.5 bg-gray-300'
-                  }`}
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Trust badges */}
-          <div className="grid grid-cols-3 gap-2 max-w-xl mx-auto pt-4">
-            {[
-              { icon: Truck, label: lang === 'ar' ? 'توصيل سريع' : 'Fast Delivery' },
-              { icon: ShieldCheck, label: lang === 'ar' ? 'جودة مضمونة' : 'Quality Assured' },
-              { icon: TrendingUp, label: lang === 'ar' ? 'أسعار جملة' : 'Wholesale Prices' },
-            ].map((item, i) => (
-              <div key={i} className="flex flex-col items-center gap-1 text-center bg-white p-2 rounded-xl border border-gray-100 shadow-2xs">
-                <div className="w-7 h-7 rounded-lg bg-primary-50 flex items-center justify-center text-primary-600">
-                  <item.icon className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-[10px] font-bold text-gray-700">{item.label}</span>
+            {/* المحتوى النصي والأزرار */}
+            <div className="text-center space-y-3">
+              
+              {/* 2. شريط توضيحي */}
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-pink-50 border border-pink-200 text-primary-600 text-xs font-bold mx-auto shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5 text-primary-500" />
+                <span>{lang === 'ar' ? 'منصة الجملة للطلب المتميز' : 'Wholesale Platform for Premium Orders'}</span>
               </div>
-            ))}
+
+              {/* 3. عنوان رئيسي واضح */}
+              <h1 className="text-xl sm:text-3xl font-black text-gray-900 leading-tight">
+                {lang === 'ar' ? 'حلويات متميزة، طلبات الجملة بكل سهولة' : 'Premium Sweets, Wholesale Orders Made Easy'}
+              </h1>
+
+              {/* 4. وصف مختصر */}
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed max-w-xl mx-auto">
+                {lang === 'ar' ? 'اطلب الحلويات عالية الجودة بأسعار جملة تنافسية، مخزون فوري، وتوصيل سريع على مستوى مصر.' : 'Order top-quality sweets at competitive wholesale prices, instant stock, and fast delivery.'}
+              </p>
+              
+              {/* 5 & 6. الأزرار الأساسية والثانوية */}
+              <div className="flex flex-col gap-2.5 max-w-md mx-auto pt-2">
+                <Link to="/products" className="w-full">
+                  <Button size="default" className="w-full text-xs sm:text-sm py-3 shadow-md rounded-xl font-bold flex items-center justify-center gap-2">
+                    <ShoppingCart className="w-4 h-4" />
+                    <span>تسوق الآن</span>
+                    <ArrowRight className="w-4 h-4 rtl:rotate-180" />
+                  </Button>
+                </Link>
+                <Link to="/categories" className="w-full">
+                  <Button size="default" variant="outline" className="w-full text-xs sm:text-sm py-3 rounded-xl font-bold border-pink-200 text-gray-700 hover:bg-pink-50/50 flex items-center justify-center gap-2">
+                    <LayoutGrid className="w-4 h-4 text-primary-600" />
+                    <span>تصفح الكتالوج</span>
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* شريط الكروت الحية التفاعلية (بدون رسائل، حركات انسيابية احترافية) */}
+            <div className="grid grid-cols-3 gap-2.5 pt-2 border-t border-pink-50">
+              
+              {/* الكارت 1: توصيل سريع */}
+              <div className="group relative flex flex-col items-center gap-1.5 text-center bg-pink-50/60 hover:bg-pink-100/80 p-3 rounded-2xl border border-pink-100/80 shadow-2xs cursor-pointer transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-lg active:scale-95">
+                <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-rose-500 shadow-xs group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                  <Truck className="w-4 h-4" />
+                </div>
+                <span className="text-[11px] sm:text-xs font-bold text-gray-800">{lang === 'ar' ? 'توصيل سريع' : 'Fast Delivery'}</span>
+              </div>
+
+              {/* الكارت 2: جودة مضمونة */}
+              <div className="group relative flex flex-col items-center gap-1.5 text-center bg-pink-50/60 hover:bg-pink-100/80 p-3 rounded-2xl border border-pink-100/80 shadow-2xs cursor-pointer transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-lg active:scale-95">
+                <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-cyan-500 shadow-xs group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <span className="text-[11px] sm:text-xs font-bold text-gray-800">{lang === 'ar' ? 'جودة مضمونة' : 'Quality Assured'}</span>
+              </div>
+
+              {/* الكارت 3: أسعار جملة */}
+              <div className="group relative flex flex-col items-center gap-1.5 text-center bg-pink-50/60 hover:bg-pink-100/80 p-3 rounded-2xl border border-pink-100/80 shadow-2xs cursor-pointer transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-lg active:scale-95">
+                <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-primary-600 shadow-xs group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <span className="text-[11px] sm:text-xs font-bold text-gray-800">{lang === 'ar' ? 'أسعار جملة' : 'Wholesale Prices'}</span>
+              </div>
+
+            </div>
+
           </div>
         </div>
       </section>

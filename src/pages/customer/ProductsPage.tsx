@@ -26,7 +26,8 @@ export function ProductsPage() {
   const categoryId = searchParams.get('category') || '';
   const search = searchParams.get('search') || '';
   const availability = (searchParams.get('availability') as 'all' | 'available') || 'all';
-  const sort = (searchParams.get('sort') as 'newest' | 'price_low' | 'price_high' | 'name') || 'newest';
+  // الترتيب الافتراضي بقى بالاسم (ثابت ومتوقع)، والمستخدم حر يغيّره وقت ما يحب من القائمة
+  const sort = (searchParams.get('sort') as 'newest' | 'price_low' | 'price_high' | 'name') || 'name';
 
   const { categories, loading: catLoading } = useCategories();
   const { products, loading, error } = useProducts({
@@ -181,10 +182,10 @@ export function ProductsPage() {
                 onChange={e => updateParam('sort', e.target.value)}
                 className="min-w-[140px]"
               >
+                <option value="name">{t('sortName')}</option>
                 <option value="newest">{t('sortNewest')}</option>
                 <option value="price_low">{t('sortPriceLow')}</option>
                 <option value="price_high">{t('sortPriceHigh')}</option>
-                <option value="name">{t('sortName')}</option>
               </Select>
               <button
                 onClick={() => setShowFilters(!showFilters)}
