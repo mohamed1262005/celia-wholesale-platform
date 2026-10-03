@@ -9,6 +9,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { AdminRoute } from '@/components/admin/AdminRoute';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { PrivacyPolicyPage } from '@/pages/customer/PrivacyPolicyPage';
 
 // Customer pages
 import { HomePage } from '@/pages/customer/HomePage';
@@ -79,6 +80,15 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+      {/* Public Privacy Policy Route (Accessible to everyone & Google Play crawler) */}
+      <Route path="/privacy-policy" element={
+        <div className="min-h-screen flex flex-col bg-gray-50">
+          <Navbar />
+          <div className="flex-1"><PrivacyPolicyPage /></div>
+          <Footer />
+        </div>
+      } />
 
       {/* Protected Customer routes (Requires login) */}
       <Route path="/" element={<ProtectedCustomerRoute><HomePage /></ProtectedCustomerRoute>} />
