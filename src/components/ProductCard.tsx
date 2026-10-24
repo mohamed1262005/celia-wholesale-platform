@@ -58,7 +58,7 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
 
   const available = getAvailableStock(product);
   const stockStatus = getStockStatus(product);
-  
+
   const calculatedPrice = getPricingForQuantity(product, qty);
   const price = calculatedPrice > 0 ? calculatedPrice : Number(product.price || 0);
   const total = price * qty;
@@ -76,22 +76,34 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
   return (
     <>
       <div className="group bg-white rounded-2xl border border-pink-100/60 shadow-xs hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between h-full transform hover:-translate-y-1">
-        
+
         {/* حاوية الصورة على ستايل التصنيفات الفخم (تأخذ المساحة بـ object-cover وتدرج أنيق) */}
         <div className="relative h-40 sm:h-44 w-full overflow-hidden bg-gray-900 flex items-center justify-center">
           <div className="absolute inset-0 block w-full h-full">
             {images.length > 0 ? (
-              images.map((img: string, idx: number) => (
-                <img
-                  key={idx}
-                  src={img}
-                  alt={name || 'Product'}
-                  className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-700 ease-in-out ${
-                    currentImageIndex === idx ? 'opacity-100 z-1' : 'opacity-0 z-0 pointer-events-none'
-                  }`}
-                  loading="lazy"
-                />
-              ))
+              images.map((img: string, idx: number) => {
+                // نحمّل الصورة الحالية والتالية والسابقة فقط لتقليل الطلبات
+                const totalImages = images.length;
+                const isNear =
+                  totalImages <= 3 ||
+                  idx === currentImageIndex ||
+                  idx === (currentImageIndex + 1) % totalImages ||
+                  idx === (currentImageIndex - 1 + totalImages) % totalImages;
+                if (!isNear) return null;
+
+                return (
+                  <img
+                    key={idx}
+                    src={img}
+                    alt={name || 'Product'}
+                    decoding="async"
+                    className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-700 ease-in-out ${
+                      currentImageIndex === idx ? 'opacity-100 z-1' : 'opacity-0 z-0 pointer-events-none'
+                    }`}
+                    loading="lazy"
+                  />
+                );
+              })
             ) : (
               <div className="w-full h-full flex items-center justify-center text-gray-500 bg-gray-100">
                 <PackageX className="w-10 h-10" />
@@ -133,7 +145,7 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
               >
                 <ChevronRight className="w-3 h-3" />
               </button>
-              
+
               <span className="px-1.5 py-0.2 text-[8px] font-mono font-bold bg-black/60 text-white rounded-full">
                 {currentImageIndex + 1}/{images.length}
               </span>
@@ -150,8 +162,8 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
           {/* عنوان المنتج عائم فوق التدرج الداكن أسفل الصورة (بنفس ستايل التصنيفات) */}
           <div className="absolute inset-x-0 bottom-2 px-3 z-10 pointer-events-none">
             <Link to={`/products/${product.id}`} className="block pointer-events-auto">
-              <h3 
-                className="font-extrabold text-xs text-white drop-shadow-md line-clamp-1 hover:text-pink-200 transition-colors" 
+              <h3
+                className="font-extrabold text-xs text-white drop-shadow-md line-clamp-1 hover:text-pink-200 transition-colors"
                 title={name}
               >
                 {name}
@@ -218,7 +230,7 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
   const images = getProductImages(product);
   const available = getAvailableStock(product);
   const stockStatus = getStockStatus(product);
-  
+
   const calculatedPrice = getPricingForQuantity(product, qty);
   const price = calculatedPrice > 0 ? calculatedPrice : Number(product.price || 0);
   const total = price * qty;
@@ -251,6 +263,7 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
                 key={idx}
                 src={img}
                 alt={name || 'Product'}
+                decoding="async"
                 className={`absolute inset-0 w-full h-full object-contain p-4 bg-white transition-opacity duration-300 ${
                   modalImageIndex === idx ? 'opacity-100 z-1' : 'opacity-0 z-0'
                 }`}
@@ -291,7 +304,7 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
                 {product.packaging}
               </span>
             )}
-            
+
             {description && (
               <div className="mt-2.5 pt-2.5 border-t border-gray-100">
                 <h4 className="text-xs font-bold text-gray-700 mb-1">:تفاصيل المنتج</h4>

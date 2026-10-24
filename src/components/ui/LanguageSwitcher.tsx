@@ -6,12 +6,13 @@ export function LanguageSwitcher() {
 
   return (
     <button
+      type="button"
       onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-      className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+      className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-medium text-gray-600 [@media(hover:hover)]:hover:bg-gray-100 active:bg-gray-100 transition-colors"
       title={lang === 'en' ? 'العربية' : 'English'}
     >
       <Globe className="w-4 h-4" />
       <span className="text-xs font-semibold">{lang === 'en' ? 'AR' : 'EN'}</span>
     </button>
   );
-}
+};

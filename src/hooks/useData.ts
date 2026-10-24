@@ -1,68 +1,67 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  useQuery,
+  useInfiniteQuery,
+  useQueryClient,
+  type InfiniteData,
+} from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { getAvailableStock } from '@/lib/pricing';
 import type { Category, Product, Order, AppNotification } from '@/types';
 
+const MINUTE = 60 * 1000;
+const PAGE_SIZE = 24;
+const EMPTY_CATEGORIES: Category[] = [];
+const EMPTY_PRODUCTS: Product[] = [];
+
+type ProductsPage = { rows: Product[]; count: number | null };
+
+const errMsg = (e: unknown): string | null =>
+  e ? (e instanceof Error ? e.message : String(e)) : null;
+
+/* ───────────── التصنيفات (كاش 15 دقيقة) ───────────── */
+
 export function useCategories() {
-  const [categories, setCategories] = useState<Category[]>(() => {
-    try {
-      const saved = localStorage.getItem('celia_categories_cache');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Date.now() - parsed.timestamp < 15 * 60 * 1000) return parsed.data;
-      }
-    } catch (e) {}
-    return [];
+  const q = useQuery({
+    queryKey: ['categories'],
+    staleTime: 15 * MINUTE,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name_ar', { ascending: true });
+      if (error) throw new Error(error.message);
+      return (data as Category[]) || [];
+    },
   });
-  
-  const [loading, setLoading] = useState(categories.length === 0);
-  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (force = false) => {
-    if (!force && categories.length > 0) {
-      setLoading(false);
-    } else if (categories.length === 0) {
-      setLoading(true);
-    }
-    setError(null);
-
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name_ar', { ascending: true });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      const resData = (data as Category[]) || [];
-      setCategories(resData);
-      try {
-        localStorage.setItem('celia_categories_cache', JSON.stringify({ data: resData, timestamp: Date.now() }));
-      } catch (e) {}
-    }
-    setLoading(false);
-  }, [categories.length]);
-
-  useEffect(() => { load(); }, [load]);
-  return { categories, loading, error, reload: () => load(true) };
+  return {
+    categories: q.data ?? EMPTY_CATEGORIES,
+    loading: q.isLoading,
+    error: errMsg(q.error),
+    reload: () => q.refetch(),
+  };
 }
 
 export function useAllCategories() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const q = useQuery({
+    queryKey: ['categories', 'all'],
+    staleTime: 15 * MINUTE,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('categories').select('*');
+      if (error) throw new Error(error.message);
+      return (data as Category[]) || [];
+    },
+  });
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from('categories')
-      .select('*');
-    setCategories((data as Category[]) || []);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-  return { categories, loading, reload: load };
+  return {
+    categories: q.data ?? EMPTY_CATEGORIES,
+    loading: q.isLoading,
+    reload: () => q.refetch(),
+  };
 }
+
+/* ───────────── المنتجات (فلترة وترتيب وترقيم على السيرفر + كاش لكل فلتر) ───────────── */
 
 export function useProducts(filters?: {
   categoryId?: string;
@@ -70,135 +69,99 @@ export function useProducts(filters?: {
   search?: string;
   availability?: 'all' | 'available';
   sort?: 'newest' | 'price_low' | 'price_high' | 'name';
+  pageSize?: number;
 }) {
-  // استرجاع الكاش الفوري من التخزين المحلي لضمان ظهور المنتجات بدون أي تأخير عند العودة للصفحة
-  const cachedInitialData = (() => {
-    try {
-      const saved = localStorage.getItem('celia_products_cache');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Date.now() - parsed.timestamp < 15 * 60 * 1000) {
-          return parsed.data;
-        }
-      }
-    } catch (e) {}
-    return [];
-  })();
+  const categoryId = filters?.categoryId || null;
+  const categorySlug = filters?.categorySlug || null;
+  const availability = filters?.availability || 'all';
+  const sort = filters?.sort || 'newest';
+  const pageSize = filters?.pageSize || PAGE_SIZE;
 
-  const [products, setProducts] = useState<Product[]>(cachedInitialData);
-  const [loading, setLoading] = useState(products.length === 0);
-  const [error, setError] = useState<string | null>(null);
+  // تنظيف كلمة البحث من الرموز اللي بتبوّظ صيغة الفلتر
+  const term = (filters?.search || '')
+    .replace(/[%,()\\*]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-  const categoryId = filters?.categoryId;
-  const categorySlug = filters?.categorySlug;
-  const search = filters?.search;
-  const availability = filters?.availability;
-  const sort = filters?.sort;
+  const q = useInfiniteQuery({
+    queryKey: ['products', { categoryId, categorySlug, term, availability, sort, pageSize }],
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }): Promise<ProductsPage> => {
+      const from = pageParam * pageSize;
+      const to = from + pageSize - 1;
 
-  const load = useCallback(async () => {
-    if (products.length === 0) {
-      setLoading(true);
-    }
-    setError(null);
+      const useSlugJoin = Boolean(categorySlug) && !categoryId;
+      const select = useSlugJoin
+        ? '*, categories!inner (*), pricing_tiers (*)'
+        : '*, categories (*), pricing_tiers (*)';
 
-    let query = supabase
-      .from('products')
-      .select(`
-        *,
-        categories (*),
-        pricing_tiers (*)
-      `);
+      let query: any = supabase
+        .from('products')
+        .select(select, pageParam === 0 ? { count: 'exact' } : undefined);
 
-    if (sort === 'price_low') {
-      query = query.order('price', { ascending: true });
-    } else if (sort === 'price_high') {
-      query = query.order('price', { ascending: false });
-    } else if (sort === 'name') {
-      query = query.order('name_ar', { ascending: true });
-    } else {
-      query = query.order('created_at', { ascending: false });
-    }
+      if (categoryId) query = query.eq('category_id', categoryId);
+      else if (useSlugJoin) query = query.eq('categories.slug', categorySlug);
 
-    const { data, error } = await query;
+      if (term) query = query.or(`name_ar.ilike.%${term}%,name_en.ilike.%${term}%`);
 
-    if (error) {
-      setError(error.message);
-      setProducts([]);
-    } else {
-      let result = (data as Product[]) || [];
-      
-      // تحديث الكاش المحلي فور نجاح جلب البيانات
-      try {
-        localStorage.setItem('celia_products_cache', JSON.stringify({
-          data: result,
-          timestamp: Date.now()
-        }));
-      } catch (e) {}
+      // تقريب على السيرفر، والفلترة الدقيقة (stock - reserved) بتتم تحت
+      if (availability === 'available') query = query.gt('stock_quantity', 0);
 
-      if (categoryId) {
-        result = result.filter((p: any) => {
-          const cat = p.categories || p.category;
-          return (
-            p.category_id === categoryId || 
-            cat?.id === categoryId || 
-            cat?.slug === categoryId
-          );
-        });
-      } else if (categorySlug) {
-        result = result.filter((p: any) => {
-          const cat = p.categories || p.category;
-          return cat?.slug === categorySlug;
-        });
-      }
+      if (sort === 'price_low') query = query.order('price', { ascending: true });
+      else if (sort === 'price_high') query = query.order('price', { ascending: false });
+      else if (sort === 'name') query = query.order('name_ar', { ascending: true });
+      else query = query.order('created_at', { ascending: false });
 
-      if (search) {
-        const q = search.toLowerCase();
-        result = result.filter(p =>
-          (p.name_en || '').toLowerCase().includes(q) ||
-          (p.name_ar || '').toLowerCase().includes(q)
-        );
-      }
+      // ترتيب ثانوي ثابت عشان الصفحات متتكررش ولا تتخطى منتجات
+      const { data, error, count } = await query.order('id', { ascending: true }).range(from, to);
+      if (error) throw new Error(error.message);
 
-      if (availability === 'available') {
-        result = result.filter((p) => getAvailableStock(p) > 0);
-      }
-
-      setProducts(result);
-    }
-    setLoading(false);
-  }, [categoryId, categorySlug, search, availability, sort, products.length]);
-
-  useEffect(() => { load(); }, [load]);
-  return { products, loading, error, reload: load };
-}
-
-export function useProduct(id: string | undefined) {
-  const [product, setProduct] = useState<Product | null>(() => {
-    if (!id) return null;
-    try {
-      const saved = localStorage.getItem('celia_products_cache');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const found = parsed.data?.find((p: any) => p.id === id);
-        if (found) return found;
-      }
-    } catch (e) {}
-    return null;
+      return { rows: (data as Product[]) || [], count: count ?? null };
+    },
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.rows.length === pageSize ? allPages.length : undefined,
   });
 
-  const [loading, setLoading] = useState(!product);
-  const [error, setError] = useState<string | null>(null);
+  const products = useMemo(() => {
+    const pages = q.data?.pages;
+    if (!pages) return EMPTY_PRODUCTS;
+    const seen = new Map<string, Product>();
+    for (const page of pages) for (const p of page.rows) seen.set(p.id, p);
+    const all = Array.from(seen.values());
+    return availability === 'available' ? all.filter((p) => getAvailableStock(p) > 0) : all;
+  }, [q.data, availability]);
 
-  useEffect(() => {
-    if (!id) {
-      setLoading(false);
-      return;
-    }
+  return {
+    products,
+    loading: q.isLoading,
+    error: errMsg(q.error),
+    reload: () => q.refetch(),
+    hasMore: Boolean(q.hasNextPage),
+    loadMore: () => q.fetchNextPage(),
+    loadingMore: q.isFetchingNextPage,
+    total: q.data?.pages[0]?.count ?? null,
+  };
+}
 
-    (async () => {
-      if (!product) setLoading(true);
-      setError(null);
+/* ───────────── منتج واحد (بيظهر فورًا من كاش القوائم) ───────────── */
 
+export function useProduct(id: string | undefined) {
+  const queryClient = useQueryClient();
+
+  const q = useQuery({
+    queryKey: ['product', id],
+    enabled: Boolean(id),
+    staleTime: 2 * MINUTE,
+    placeholderData: () => {
+      if (!id) return undefined;
+      const lists = queryClient.getQueriesData<InfiniteData<ProductsPage>>({ queryKey: ['products'] });
+      for (const [, data] of lists) {
+        const found = data?.pages.flatMap((p) => p.rows).find((p) => p.id === id);
+        if (found) return found;
+      }
+      return undefined;
+    },
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
         .select(`
@@ -206,20 +169,17 @@ export function useProduct(id: string | undefined) {
           categories (*),
           pricing_tiers (*)
         `)
-        .eq('id', id)
+        .eq('id', id as string)
         .maybeSingle();
+      if (error) throw new Error(error.message);
+      return (data as Product | null) ?? null;
+    },
+  });
 
-      if (error) {
-        setError(error.message);
-      } else if (data) {
-        setProduct(data as Product);
-      }
-      setLoading(false);
-    })();
-  }, [id]);
-
-  return { product, loading, error };
+  return { product: q.data ?? null, loading: q.isLoading, error: errMsg(q.error) };
 }
+
+/* ───────────── بيانات خاصة بالعميل: بدون كاش دائم (زي ما كانت) ───────────── */
 
 export function useOrders(customerId?: string) {
   const [orders, setOrders] = useState<Order[]>([]);

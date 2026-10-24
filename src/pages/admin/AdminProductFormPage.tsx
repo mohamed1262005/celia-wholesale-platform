@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
+import { invalidateCatalog } from '@/lib/queryClient';
 import { Button } from '@/components/ui/Button';
 import { Package, ArrowRight, Upload, Sparkles } from 'lucide-react';
 
@@ -92,6 +93,9 @@ export function AdminProductFormPage() {
           : isEditing ? 'Product updated successfully' : 'Product added successfully',
         'success'
       );
+
+      // تحديث كاش المنتجات عشان التعديل يظهر للعملاء
+      invalidateCatalog();
 
       // إذا كنا بنعدل منتج، فنحن نحتاج للرجوع للقائمة بعد التعديل
       if (isEditing) {

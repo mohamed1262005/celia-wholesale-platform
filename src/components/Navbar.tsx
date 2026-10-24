@@ -34,6 +34,9 @@ export function Navbar() {
 
   const { notifications, unreadCount, markAsRead } = useNotifications(user?.id);
 
+  // صفحة المنتجات فيها شريط بحث خاص بيها، فنخفي شريط الموبايل هنا لمنع التكرار
+  const hideMobileSearch = location.pathname === '/products';
+
   useEffect(() => {
     setMobileMenuOpen(false);
     setProfileOpen(false);
@@ -92,7 +95,7 @@ export function Navbar() {
       markAsRead(n.id);
     }
     setNotifOpen(false);
-    
+
     if (orderId) {
       navigate(`/orders/${orderId}`);
     } else {
@@ -110,16 +113,16 @@ export function Navbar() {
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm w-full">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2">
-          
+
           <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+              className="md:hidden p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer flex-shrink-0"
               aria-label="Toggle Menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            <div className="flex-shrink-0">
+            <div className="min-w-0 overflow-hidden">
               <Logo />
             </div>
           </div>
@@ -154,8 +157,11 @@ export function Navbar() {
           </form>
 
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            
-            <LanguageSwitcher />
+
+            {/* زر اللغة في الشريط للشاشات الأكبر من الموبايل فقط (في الموبايل موجود داخل القائمة) */}
+            <div className="hidden sm:block">
+              <LanguageSwitcher />
+            </div>
 
             {/* زر لوحة التحكم للشاشات الكبيرة فقط */}
             {isAdmin && (
@@ -313,23 +319,26 @@ export function Navbar() {
           </div>
         </div>
 
-        <div className="sm:hidden pb-3 pt-1">
-          <form onSubmit={handleSearch}>
-            <div className="relative w-full">
-              <Search className="absolute inset-y-0 start-0 ms-3 my-auto w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={searchValue}
-                onChange={e => setSearchValue(e.target.value)}
-                placeholder={t('search')}
-                className="w-full ps-9 pe-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-primary-300 focus:ring-2 focus:ring-primary-100 transition-all outline-none"
-              />
-            </div>
-          </form>
-        </div>
+        {/* شريط البحث للموبايل (مخفي في صفحة المنتجات لأنها فيها بحث خاص بها) */}
+        {!hideMobileSearch && (
+          <div className="sm:hidden pb-3 pt-1">
+            <form onSubmit={handleSearch}>
+              <div className="relative w-full">
+                <Search className="absolute inset-y-0 start-0 ms-3 my-auto w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchValue}
+                  onChange={e => setSearchValue(e.target.value)}
+                  placeholder={t('search')}
+                  className="w-full ps-9 pe-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-primary-300 focus:ring-2 focus:ring-primary-100 transition-all outline-none"
+                />
+              </div>
+            </form>
+          </div>
+        )}
       </div>
 
-      {/* قائمة الموبايل المنسدلة (تحتوي على روابط التنقل، لوحة التحكم للمشرف، وزر واتساب لمنع التكدس) */}
+      {/* قائمة الموبايل المنسدلة (تحتوي على روابط التنقل، اللغة، لوحة التحكم للمشرف، وزر واتساب لمنع التكدس) */}
       {mobileMenuOpen && (
         <div className="md:hidden absolute top-full start-0 w-full bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-xl z-50 px-4 py-3 space-y-1.5 animate-slide-down">
           {navLinks.map(link => (
@@ -346,6 +355,12 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
+
+          {/* زر اللغة داخل القائمة للموبايل */}
+          <div className="sm:hidden flex items-center justify-between px-3.5 py-1.5 rounded-xl bg-gray-50">
+            <span className="text-xs font-bold text-gray-700">{lang === 'ar' ? 'اللغة' : 'Language'}</span>
+            <LanguageSwitcher />
+          </div>
 
           {/* لوحة التحكم داخل القائمة للمشرف */}
           {isAdmin && (

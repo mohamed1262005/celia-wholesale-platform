@@ -3,6 +3,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { formatPrice } from '@/lib/pricing';
+import { uploadCachedImage } from '@/lib/imageUpload';
+import { invalidateCatalog } from '@/lib/queryClient';
 import { Plus, Search, QrCode, Edit, Trash2, Package, AlertTriangle, CheckCircle, XCircle, X, Upload, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BarcodeScannerModal } from '@/components/admin/BarcodeScannerModal';
@@ -70,6 +72,7 @@ export function AdminProductsPage() {
     } else {
       showToast(lang === 'ar' ? 'تم حذف المنتج بنجاح' : 'Product deleted successfully', 'success');
       setProducts(products.filter(p => p.id !== id));
+      invalidateCatalog();
     }
   };
 
@@ -79,63 +82,8 @@ export function AdminProductsPage() {
 
     setUploadingImage(true);
     try {
-      const compressedFile = await new Promise<File>((resolve) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (event) => {
-          const img = new Image();
-          img.src = event.target?.result as string;
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            let width = img.width;
-            let height = img.height;
-            
-            const MAX_DIMENSION = 1000;
-            if (width > height && width > MAX_DIMENSION) {
-              height = Math.round((height * MAX_DIMENSION) / width);
-              width = MAX_DIMENSION;
-            } else if (height > MAX_DIMENSION) {
-              width = Math.round((width * MAX_DIMENSION) / height);
-              height = MAX_DIMENSION;
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx?.drawImage(img, 0, 0, width, height);
-
-            canvas.toBlob(
-              (blob) => {
-                if (blob) {
-                  const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.webp', {
-                    type: 'image/webp',
-                    lastModified: Date.now(),
-                  });
-                  resolve(newFile);
-                } else {
-                  resolve(file);
-                }
-              },
-              'image/webp',
-              0.80
-            );
-          };
-        };
-      });
-
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.webp`;
-      const filePath = `products/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('products') 
-        .upload(filePath, compressedFile);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('products')
-        .getPublicUrl(filePath);
-
+      // ضغط الصورة (WebP) + رفعها بكاش سنة
+      const publicUrl = await uploadCachedImage(file, 'products');
       setImageUrls(prev => [...prev, publicUrl]);
       showToast(lang === 'ar' ? 'تم ضغط ورفع الصورة بنجاح' : 'Image compressed and uploaded successfully', 'success');
     } catch (error: any) {
@@ -192,7 +140,7 @@ export function AdminProductsPage() {
 
     const payload = {
       name_ar: formData.name_ar,
-      name_en: formData.name_ar, 
+      name_en: formData.name_ar,
       category_id: formData.category_id || null,
       price: parseFloat(formData.price) || 0,
       compare_at_price: formData.compare_at_price ? parseFloat(formData.compare_at_price) : null,
@@ -218,7 +166,7 @@ export function AdminProductsPage() {
       showToast(error.message, 'error');
     } else {
       showToast(lang === 'ar' ? (editingProduct ? 'تم تحديث المنتج بنجاح' : 'تم إضافة المنتج بنجاح') : 'Saved successfully', 'success');
-      
+
       if (editingProduct) {
         setIsAddModalOpen(false);
       } else {
@@ -233,6 +181,7 @@ export function AdminProductsPage() {
         });
         setImageUrls([]);
       }
+      invalidateCatalog();
       fetchData();
     }
   };
@@ -371,12 +320,12 @@ export function AdminProductsPage() {
                 <div>
                   <div className="relative h-44 bg-gradient-to-b from-gray-50 to-gray-100/50 overflow-hidden border-b border-gray-100 flex items-center justify-center">
                     {product.image_url ? (
-                      <img src={product.image_url} alt={productName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img src={product.image_url} alt={productName} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                       <Package className="w-12 h-12 text-gray-300" />
                     )}
                     <div className="absolute top-3 right-3">{stockBadge}</div>
-                    
+
                     {hasDiscount && (
                       <div className="absolute top-3 left-3 bg-pink-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-sm">
                         عرض خاص
@@ -505,7 +454,7 @@ export function AdminProductsPage() {
                     placeholder="0.00"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-xs font-bold text-pink-600 mb-1 flex items-center gap-1">
                     <Tag className="w-3.5 h-3.5" />
@@ -588,13 +537,14 @@ export function AdminProductsPage() {
         </div>
       )}
 
-      <BarcodeScannerModal 
-        isOpen={isScanModalOpen} 
-        onClose={() => setIsScanModalOpen(false)} 
+      <BarcodeScannerModal
+        isOpen={isScanModalOpen}
+        onClose={() => setIsScanModalOpen(false)}
         onSuccess={(msg) => {
           showToast(msg, 'success');
+          invalidateCatalog();
           fetchData();
-        }} 
+        }}
       />
     </div>
   );

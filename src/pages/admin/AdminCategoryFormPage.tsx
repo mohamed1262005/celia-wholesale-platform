@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
+import { uploadCachedImage } from '@/lib/imageUpload';
+import { invalidateCatalog } from '@/lib/queryClient';
 import { Button } from '@/components/ui/Button';
 import { FolderTree, ArrowRight, Upload, X, Image as ImageIcon } from 'lucide-react';
 
@@ -50,35 +52,20 @@ export function AdminCategoryFormPage() {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const file = files[0];
     setUploadingImage(true);
-
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-      const filePath = `categories/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('products')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data: publicURLData } = supabase.storage
-        .from('products')
-        .getPublicUrl(filePath);
-
-      setFormData((prev) => ({ ...prev, image: publicURLData.publicUrl }));
+      // ضغط الصورة + رفعها بكاش سنة
+      const publicUrl = await uploadCachedImage(file, 'categories', 800);
+      setFormData((prev) => ({ ...prev, image: publicUrl }));
       showToast(lang === 'ar' ? 'تم رفع الصورة بنجاح' : 'Image uploaded successfully', 'success');
     } catch (error: any) {
       showToast(error.message || 'حدث خطأ أثناء رفع الصورة', 'error');
     } finally {
       setUploadingImage(false);
+      e.target.value = '';
     }
   };
 
@@ -93,7 +80,7 @@ export function AdminCategoryFormPage() {
       .replace(/[^\w\s-]/g, '')
       .replace(/[\s_-]+/g, '-')
       .replace(/^-+|-+$/g, '');
-    
+
     const uniqueSlug = `${baseSlug || 'category'}-${Math.random().toString(36).substring(2, 8)}`;
 
     const payload: any = {
@@ -126,6 +113,8 @@ export function AdminCategoryFormPage() {
           : isEditing ? 'Category updated successfully' : 'Category added successfully',
         'success'
       );
+      // تحديث كاش التصنيفات والمنتجات
+      invalidateCatalog();
       navigate('/admin/categories');
     }
   };

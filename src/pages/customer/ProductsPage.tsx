@@ -26,11 +26,10 @@ export function ProductsPage() {
   const categoryId = searchParams.get('category') || '';
   const search = searchParams.get('search') || '';
   const availability = (searchParams.get('availability') as 'all' | 'available') || 'all';
-  // الترتيب الافتراضي بقى بالاسم (ثابت ومتوقع)، والمستخدم حر يغيّره وقت ما يحب من القائمة
   const sort = (searchParams.get('sort') as 'newest' | 'price_low' | 'price_high' | 'name') || 'name';
 
   const { categories, loading: catLoading } = useCategories();
-  const { products, loading, error } = useProducts({
+  const { products, loading, error, hasMore, loadMore, loadingMore, total } = useProducts({
     categoryId: categoryId || undefined,
     search: search || undefined,
     availability,
@@ -73,7 +72,7 @@ export function ProductsPage() {
           <h1 className="text-2xl lg:text-3xl font-extrabold text-gray-900">{pageTitle}</h1>
           {!loading && (
             <p className="text-sm text-gray-500 mt-1">
-              {t('resultsCount', { count: products.length })}
+              {t('resultsCount', { count: hasMore && total != null ? total : products.length })}
             </p>
           )}
         </div>
@@ -234,7 +233,7 @@ export function ProductsPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
             </div>
-          ) : products.length === 0 ? (
+          ) : products.length === 0 && !hasMore ? (
             <EmptyState
               icon={<PackageSearch className="w-10 h-10" />}
               title={t('noResults')}
@@ -243,9 +242,23 @@ export function ProductsPage() {
               onAction={clearFilters}
             />
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {products.map(p => <ProductCard key={p.id} product={p} />)}
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {products.map(p => <ProductCard key={p.id} product={p} />)}
+              </div>
+
+              {hasMore && (
+                <div className="flex justify-center mt-6">
+                  <button
+                    onClick={() => loadMore()}
+                    disabled={loadingMore}
+                    className="px-6 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-bold shadow-sm transition-all cursor-pointer disabled:opacity-60"
+                  >
+                    {loadingMore ? t('loading') : (lang === 'ar' ? 'عرض المزيد' : 'Load more')}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
