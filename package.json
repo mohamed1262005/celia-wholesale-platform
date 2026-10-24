@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.3",
     "@supabase/supabase-js": "^2.57.4",
     "@tanstack/query-sync-storage-persister": "^5.104.5",
     "@tanstack/react-query-persist-client": "^5.104.5",
