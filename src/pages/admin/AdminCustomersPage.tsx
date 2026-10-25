@@ -38,13 +38,19 @@ export function AdminCustomersPage() {
       rawCustomers = data || [];
     }
 
-    // استبعاد الأدمن
-    const filteredProfiles = rawCustomers.filter(c => 
-      c.role !== 'admin' && 
-      c.email !== 'admin' && 
-      c.name !== 'admin' &&
-      c.full_name !== 'admin'
-    );
+    // إزالة التكرار بناءً على الـ id أو الـ email لمنع ظهور العميل مرتين
+    const uniqueCustomersMap = new Map();
+    rawCustomers.forEach(c => {
+      const identifier = c.id || c.email;
+      if (identifier && !uniqueCustomersMap.has(identifier)) {
+        // استبعاد الأدمن
+        if (c.role !== 'admin' && c.email !== 'admin' && c.name !== 'admin' && c.full_name !== 'admin') {
+          uniqueCustomersMap.set(identifier, c);
+        }
+      }
+    });
+
+    const filteredProfiles = Array.from(uniqueCustomersMap.values());
 
     // 2. جلب الطلبات بشكل آمن
     const { data: ordersData } = await supabase
@@ -53,18 +59,14 @@ export function AdminCustomersPage() {
 
     const orders = ordersData || [];
 
-    // 3. جلب عناصر الطلبات بشكل آمن وبدون تسبب في أخطاء 400
-    const { data: orderItemsData, error: itemsError } = await supabase
+    // 3. جلب عناصر الطلبات بشكل آمن
+    const { data: orderItemsData } = await supabase
       .from('order_items')
       .select('id, order_id, product_name, quantity, price');
 
-    if (itemsError) {
-      console.warn('Notice on order_items fetch:', itemsError.message);
-    }
-
     const orderItems = orderItemsData || [];
 
-    // 4. دمج البيانات وحساب إجمالي المشتريات وعدد الطلبات لكل عميل بدقة حقيقية
+    // 4. دمج البيانات وحساب الإحصائيات بدقة فريدة لكل عميل
     const mappedCustomers = filteredProfiles.map(customer => {
       const customerOrders = orders.filter(o => 
         o.user_id === customer.id || o.customer_id === customer.id
@@ -92,19 +94,18 @@ export function AdminCustomersPage() {
       };
     });
 
-    // تعريف حقيقي للعملاء المميزين (من لديه طلبات > 0 أو مشتريات فعلية، وترتيبهم حسب الأعلى مشتريات)
+    // تحديد العملاء المميزين
     mappedCustomers.forEach(c => {
       c.isVip = c.ordersCount > 0 || c.totalSpent > 0;
     });
 
-    // ترتيب العملاء تنازلياً بحيث الأعلى في المشتريات والطلبات يظهر أولاً
+    // ترتيب العملاء تنازلياً حسب إجمالي المشتريات والطلبات
     mappedCustomers.sort((a, b) => b.totalSpent - a.totalSpent || b.ordersCount - a.ordersCount);
 
     setCustomers(mappedCustomers);
     setLoading(false);
   };
 
-  // تصفية العملاء (بحث + فلتر المميزين الحقيقي)
   const filteredCustomers = customers.filter((customer) => {
     const name = (customer.full_name || customer.name || '').toLowerCase();
     const email = (customer.email || '').toLowerCase();
@@ -150,7 +151,7 @@ export function AdminCustomersPage() {
           </div>
         </div>
 
-        {/* كارت العملاء المميزين (فلترة حقيقية للأعلى طلباً ومشتريات) */}
+        {/* كارت العملاء المميزين */}
         <div 
           onClick={() => setFilterVipOnly(!filterVipOnly)}
           className={`cursor-pointer rounded-3xl border p-6 flex items-center justify-between transition-all duration-300 hover:scale-[1.02] shadow-card ${

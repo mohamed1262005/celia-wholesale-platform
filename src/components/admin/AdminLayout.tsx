@@ -154,11 +154,12 @@ export function AdminLayout() {
       )}
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-xs">
+        {/* الهيدر العلوي ثابت ومستقر مهما كانت مسافة التمرير */}
+        <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-gray-100 px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-xs w-full">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsMobileSidebarOpen(true)}
-              className="md:hidden p-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              className="md:hidden p-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer"
               aria-label="Open Menu"
             >
               <Menu className="w-5 h-5" />
@@ -176,7 +177,7 @@ export function AdminLayout() {
             <div className="relative">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2.5 bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-600 transition-all duration-200 flex items-center justify-center border border-gray-200/60 shadow-2xs"
+                className="relative p-2.5 bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-600 transition-all duration-200 flex items-center justify-center border border-gray-200/60 shadow-2xs cursor-pointer"
               >
                 <Bell className="w-5 h-5 text-gray-700" />
                 {unreadCount > 0 && (
