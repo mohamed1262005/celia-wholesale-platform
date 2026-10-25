@@ -5,7 +5,17 @@ import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatDate, formatPrice } from '@/lib/pricing';
-import { Eye, Search, Phone, MapPin, FileText, ShoppingCart, Clock, CheckCircle, Truck, XCircle, Trash2, X } from 'lucide-react';
+import { mapsUrl, isValidPoint } from '@/lib/location';
+import { Eye, Search, Phone, MapPin, FileText, ShoppingCart, Clock, CheckCircle, Truck, XCircle, Trash2, X, ExternalLink } from 'lucide-react';
+
+// رابط موقع العميل على الخريطة: من أعمدة الإحداثيات، أو من نص العنوان للطلبات الأقدم
+function getOrderMapUrl(order: any): string | null {
+  if (isValidPoint(order?.delivery_lat, order?.delivery_lng)) {
+    return mapsUrl({ lat: Number(order.delivery_lat), lng: Number(order.delivery_lng) });
+  }
+  const match = /https?:\/\/www\.google\.com\/maps\?q=[-\d.,]+/.exec(order?.shipping_address || '');
+  return match ? match[0] : null;
+}
 
 export function AdminOrdersPage() {
   const { t, lang } = useLanguage();
@@ -81,10 +91,10 @@ export function AdminOrdersPage() {
   // دالة حذف الطلب/الفاتورة
   const deleteOrder = async (orderId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    
+
     const confirmDelete = window.confirm(
-      lang === 'ar' 
-        ? 'هل أنت متأكد من حذف هذه الفاتورة/الطلب نهائياً؟' 
+      lang === 'ar'
+        ? 'هل أنت متأكد من حذف هذه الفاتورة/الطلب نهائياً؟'
         : 'Are you sure you want to delete this order?'
     );
 
@@ -128,6 +138,8 @@ export function AdminOrdersPage() {
     cancelled: orders.filter(o => o.status === 'cancelled' || o.status === 'ملغي').length,
   };
 
+  const selectedMapUrl = selectedOrder ? getOrderMapUrl(selectedOrder) : null;
+
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-8 pb-28 space-y-6">
       {/* 1. Header & Search */}
@@ -156,7 +168,7 @@ export function AdminOrdersPage() {
 
       {/* 2. Mini KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div 
+        <div
           onClick={() => setActiveTab('new')}
           className="rounded-2xl border border-blue-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-blue-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
         >
@@ -170,7 +182,7 @@ export function AdminOrdersPage() {
           </div>
         </div>
 
-        <div 
+        <div
           onClick={() => setActiveTab('processing')}
           className="rounded-2xl border border-amber-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-amber-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
         >
@@ -184,7 +196,7 @@ export function AdminOrdersPage() {
           </div>
         </div>
 
-        <div 
+        <div
           onClick={() => setActiveTab('delivered')}
           className="rounded-2xl border border-emerald-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-emerald-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
         >
@@ -198,7 +210,7 @@ export function AdminOrdersPage() {
           </div>
         </div>
 
-        <div 
+        <div
           onClick={() => setActiveTab('all')}
           className="rounded-2xl border border-purple-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-purple-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer"
         >
@@ -447,9 +459,21 @@ export function AdminOrdersPage() {
                 <p className="text-sm text-gray-800">
                   {selectedOrder.city} - {selectedOrder.address}
                 </p>
-                <p className="text-xs text-gray-500">
-                  {selectedOrder.shipping_address}
+                <p className="text-xs text-gray-500 break-words">
+                  {(selectedOrder.shipping_address || '').replace(/\[الموقع:[^\]]*\]/, '')}
                 </p>
+
+                {selectedMapUrl && (
+                  <a
+                    href={selectedMapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>{lang === 'ar' ? 'فتح موقع العميل على الخريطة' : 'Open customer location on map'}</span>
+                  </a>
+                )}
               </div>
             </div>
 

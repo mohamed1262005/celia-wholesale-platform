@@ -14,26 +14,11 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   build: {
-    // ⚡ تحسينات الأداء وضغط الحزم النهائية
     target: 'esnext',
     minify: 'esbuild',
     cssCodeSplit: true,
-    rollupOptions: {
-      output: {
-        // تقسيم ملفات الـ Vendor والجافاسكريبت لضمان تحميل أسرع وسلس
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-              return 'vendor-react';
-            }
-            if (id.includes('@supabase')) {
-              return 'vendor-supabase';
-            }
-            return 'vendor-libs';
-          }
-        },
-      },
-    },
-    chunkSizeWarningLimit: 1000,
+    // ملحوظة: شلنا manualChunks لأنه كان بيعمل اعتماد دائري بين ملفات المكتبات
+    // ويكسر الموقع بعد البناء (forwardRef of undefined)
+    chunkSizeWarningLimit: 1500,
   },
 });
