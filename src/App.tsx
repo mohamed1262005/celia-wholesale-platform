@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { PushManager } from '@/components/PushManager';
+import { BackButtonHandler } from '@/components/BackButtonHandler';
 import { useEffect } from 'react';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
@@ -136,6 +138,8 @@ function App() {
           <CartProvider>
             <BrowserRouter>
               <ScrollToTop />
+              <PushManager />
+              <BackButtonHandler />
               <AppRoutes />
               <ToastContainer />
             </BrowserRouter>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "553779485762",
+    "project_id": "celia-store",
+    "storage_bucket": "celia-store.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:553779485762:android:a7671661a075c0d77021db",
+        "android_client_info": {
+          "package_name": "com.celia.wholesale"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJ1Z2ehb9_AfpwDqUTzE0_4s1U_4I18r0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

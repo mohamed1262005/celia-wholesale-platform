@@ -1,11 +1,13 @@
-import { Link } from 'react-router-dom';
 import { useState, useEffect, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/contexts/ToastContext';
 import type { Product } from '@/types';
 import { getPricingForQuantity, getAvailableStock, getStockStatus } from '@/lib/pricing';
 import { QuantitySelector } from '@/components/ui/QuantitySelector';
+import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
+import { useBackClose } from '@/hooks/useBackClose';
 import { ShoppingBag, Eye, PackageX, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 interface ProductCardProps {
@@ -32,7 +34,6 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const name = lang === 'ar' ? ((product as any).name_ar || product.name) : ((product as any).name_en || product.name);
-  const description = (product as any).description || (product as any).description_ar || (product as any).description_en;
 
   const images = getProductImages(product);
 
@@ -61,7 +62,6 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
 
   const calculatedPrice = getPricingForQuantity(product, qty);
   const price = calculatedPrice > 0 ? calculatedPrice : Number(product.price || 0);
-  const total = price * qty;
 
   const handleAddToCart = () => {
     if (available === 0) return;
@@ -127,7 +127,7 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
             ) : null}
           </div>
 
-          {/* زر العين للمعاينة */}
+          {/* زر العين للمعاينة (الطريقة الوحيدة لفتح تفاصيل المنتج) */}
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowQuickView(true); }}
             className="absolute top-2 end-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-gray-700 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white shadow-md cursor-pointer z-20 hover:scale-110"
@@ -159,16 +159,14 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
             </div>
           )}
 
-          {/* عنوان المنتج عائم فوق التدرج الداكن أسفل الصورة (بنفس ستايل التصنيفات) */}
+          {/* عنوان المنتج عائم فوق التدرج الداكن (نص فقط، مش رابط) */}
           <div className="absolute inset-x-0 bottom-2 px-3 z-10 pointer-events-none">
-            <Link to={`/products/${product.id}`} className="block pointer-events-auto">
-              <h3
-                className="font-extrabold text-xs text-white drop-shadow-md line-clamp-1 hover:text-pink-200 transition-colors"
-                title={name}
-              >
-                {name}
-              </h3>
-            </Link>
+            <h3
+              className="font-extrabold text-xs text-white drop-shadow-md line-clamp-1"
+              title={name}
+            >
+              {name}
+            </h3>
           </div>
         </div>
 
@@ -224,6 +222,17 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
   const [qty, setQty] = useState(1);
   const [modalImageIndex, setModalImageIndex] = useState(0);
 
+  // ثبات النافذة: قفل scroll الخلفية + زر الرجوع يقفلها + زر Esc
+  useLockBodyScroll(true);
+  useBackClose(true, onClose);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   const name = lang === 'ar' ? ((product as any).name_ar || product.name) : ((product as any).name_en || product.name);
   const description = (product as any).description || (product as any).description_ar || (product as any).description_en;
 
@@ -246,17 +255,29 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-xs" onClick={onClose}>
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row animate-scale-in" onClick={e => e.stopPropagation()}>
+  // بنعرض النافذة في document.body عشان ما تتأثرش بأي transform أو overflow في الكروت اللي فوقها
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-xs overscroll-none"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={name}
+    >
+      <div
+        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] max-h-[90dvh] overflow-hidden flex flex-col md:flex-row animate-scale-in"
+        onClick={e => e.stopPropagation()}
+      >
         <button
+          type="button"
           onClick={onClose}
           className="absolute top-3 end-3 z-30 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center cursor-pointer shadow-xs transition-all"
+          aria-label={lang === 'ar' ? 'إغلاق' : 'Close'}
         >
           <X className="w-4 h-4" />
         </button>
 
-        <div className="md:w-1/2 aspect-square bg-white relative flex items-center justify-center overflow-hidden border-b md:border-b-0 md:border-e border-gray-100">
+        <div className="md:w-1/2 aspect-square shrink-0 bg-white relative flex items-center justify-center overflow-hidden border-b md:border-b-0 md:border-e border-gray-100">
           {images.length > 0 ? (
             images.map((img: string, idx: number) => (
               <img
@@ -278,6 +299,7 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
           {images.length > 1 && (
             <div className="absolute inset-x-0 bottom-3 flex items-center justify-between px-4 z-20">
               <button
+                type="button"
                 onClick={() => setModalImageIndex((prev) => (prev - 1 + images.length) % images.length)}
                 className="w-8 h-8 rounded-full bg-white/95 text-gray-900 shadow-md flex items-center justify-center hover:bg-white cursor-pointer"
               >
@@ -287,6 +309,7 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
                 {modalImageIndex + 1} / {images.length}
               </span>
               <button
+                type="button"
                 onClick={() => setModalImageIndex((prev) => (prev + 1) % images.length)}
                 className="w-8 h-8 rounded-full bg-white/95 text-gray-900 shadow-md flex items-center justify-center hover:bg-white cursor-pointer"
               >
@@ -296,7 +319,8 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
           )}
         </div>
 
-        <div className="md:w-1/2 p-5 flex flex-col justify-between max-h-[90vh] overflow-y-auto">
+        {/* منطقة المحتوى: هي الوحيدة اللي بتتحرك (scroll) داخل النافذة، ومش بتمرّر الحركة للصفحة */}
+        <div className="md:w-1/2 min-h-0 p-5 flex flex-col justify-between overflow-y-auto overscroll-contain">
           <div className="space-y-2.5">
             <h3 className="text-base font-extrabold text-gray-900 pe-8">{name}</h3>
             {product.packaging && (
@@ -328,6 +352,7 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
                   <QuantitySelector value={qty} onChange={setQty} max={available} size="sm" />
                 </div>
                 <button
+                  type="button"
                   onClick={handleAddToCart}
                   className="w-full py-2 bg-primary-600 text-white text-xs font-bold rounded-xl hover:bg-primary-700 transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-2"
                 >
@@ -343,7 +368,8 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
