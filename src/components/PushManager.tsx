@@ -40,8 +40,10 @@ export function PushManager() {
 
     // المستخدم ضغط على الإشعار
     handles.push(
-      FirebaseMessaging.addListener('notificationActionPerformed', () => {
-        navigate('/notifications');
+      FirebaseMessaging.addListener('notificationActionPerformed', ({ notification }) => {
+        // الإشعار ممكن يشاور على منتج معيّن (route = /products/<id>)
+        const route = (notification.data as { route?: unknown } | undefined)?.route;
+        navigate(typeof route === 'string' && route.startsWith('/') ? route : '/notifications');
       }),
     );
 

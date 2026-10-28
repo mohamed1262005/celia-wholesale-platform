@@ -24,6 +24,8 @@ export function NotificationsPage() {
   const navigate = useNavigate();
   const { notifications, loading: notifLoading, unreadCount, markAsRead, markAllAsRead } = useNotifications(user?.id);
   const [myOrders, setMyOrders] = useState<any[]>([]);
+  // الإشعارات المرتبطة بمنتج: notification.id -> بيانات المنتج
+  const [productByNotif, setProductByNotif] = useState<Record<string, any>>({});
 
   // جلب طلبات المستخدم الحية لمطابقتها مع الإشعارات
   useEffect(() => {
@@ -44,6 +46,45 @@ export function NotificationsPage() {
       }
     })();
   }, [user?.id]);
+
+  // جلب المنتجات المرتبطة بالإشعارات (لو العمود product_id مش موجود لسه، بنتجاهل الموضوع بهدوء)
+  const notifIdsKey = notifications.map((n: any) => n.id).join(',');
+  useEffect(() => {
+    if (notifications.length === 0) {
+      setProductByNotif({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data: links } = await supabase
+        .from('notifications')
+        .select('id, product_id')
+        .in('id', notifications.map((n: any) => n.id))
+        .not('product_id', 'is', null);
+
+      if (cancelled) return;
+      if (!links || links.length === 0) {
+        setProductByNotif({});
+        return;
+      }
+
+      const productIds = Array.from(new Set(links.map((l: any) => l.product_id)));
+      const { data: prods } = await supabase
+        .from('products')
+        .select('id, name_ar, name_en, image_url')
+        .in('id', productIds);
+
+      if (cancelled) return;
+      const map: Record<string, any> = {};
+      links.forEach((l: any) => {
+        const p = (prods || []).find((x: any) => x.id === l.product_id);
+        if (p) map[l.id] = p;
+      });
+      setProductByNotif(map);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifIdsKey]);
 
   if (loading) return null;
   if (!user) return <Navigate to="/login?redirect=/notifications" replace />;
@@ -82,6 +123,12 @@ export function NotificationsPage() {
     }
   };
 
+  const openProduct = (n: any, productId: string) => {
+    const isReadStatus = n.read ?? (n as any).is_read ?? false;
+    if (!isReadStatus) markAsRead(n.id);
+    navigate(`/products/${productId}`);
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 overflow-x-hidden">
       {/* Header section */}
@@ -117,22 +164,31 @@ export function NotificationsPage() {
           {notifications.map(n => {
             const isReadStatus = n.read ?? (n as any).is_read ?? false;
             const display = getNotificationDisplay(n);
+            const product = productByNotif[n.id];
+            const productName = product ? (lang === 'ar' ? (product.name_ar || product.name_en) : (product.name_en || product.name_ar)) : '';
 
             return (
               <div
                 key={n.id}
+                onClick={product ? () => openProduct(n, product.id) : undefined}
                 className={`w-full text-start flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border transition-all shadow-xs ${
+                  product ? 'cursor-pointer active:scale-[0.99] ' : ''
+                }${
                   !isReadStatus
                     ? 'bg-primary-50/50 border-primary-200'
                     : 'bg-white border-gray-100 hover:bg-gray-50/60'
                 }`}
               >
                 <div className="flex items-start gap-3 min-w-0 flex-1">
-                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-                    display.orderId ? 'bg-primary-100 text-primary-600' : 'bg-gray-100 text-gray-400'
-                  }`}>
-                    {display.orderId ? <Package className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
-                  </div>
+                  {product?.image_url ? (
+                    <img src={product.image_url} alt="" className="w-12 h-12 rounded-2xl object-cover flex-shrink-0" />
+                  ) : (
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                      display.orderId || product ? 'bg-primary-100 text-primary-600' : 'bg-gray-100 text-gray-400'
+                    }`}>
+                      {display.orderId || product ? <Package className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+                    </div>
+                  )}
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -144,11 +200,29 @@ export function NotificationsPage() {
                     <p className="text-xs sm:text-sm text-gray-600 mt-1 leading-relaxed break-words">
                       {display.message}
                     </p>
+                    {product && (
+                      <p className="text-[11px] sm:text-xs font-bold text-primary-600 mt-1.5 truncate">
+                        {productName}
+                      </p>
+                    )}
                     <p className="text-[10px] sm:text-xs text-gray-400 mt-2">
                       {formatDate(n.created_at, lang)}
                     </p>
                   </div>
                 </div>
+
+                {/* زر عرض المنتج */}
+                {product && (
+                  <div className="flex-shrink-0 self-end sm:self-center">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openProduct(n, product.id); }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>{lang === 'ar' ? 'عرض المنتج' : 'View Product'}</span>
+                    </button>
+                  </div>
+                )}
 
                 {/* زر التفاصيل الحي */}
                 {display.orderId && (

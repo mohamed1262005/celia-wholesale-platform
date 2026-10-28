@@ -63,8 +63,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Cairo', 'system-ui', 'sans-serif'],
-        display: ['Cairo', 'system-ui', 'sans-serif'],
+        sans: ['Cairo Variable', 'Cairo', 'system-ui', 'sans-serif'],
+        display: ['Cairo Variable', 'Cairo', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         'xl': '0.875rem',

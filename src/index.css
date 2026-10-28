@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap');
+@import '@fontsource-variable/cairo/wght.css';
 
 @tailwind base;
 @tailwind components;
@@ -11,12 +11,18 @@
 
 html {
   scroll-behavior: smooth;
+  /* ثبات: منع تكبير الخط التلقائي، ومنع الـ double-tap zoom، ومنع الشد للتحديث والارتداد المطاطي */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
+  overscroll-behavior-y: none;
 }
 
 body {
-  font-family: 'Cairo', system-ui, sans-serif;
+  font-family: 'Cairo Variable', 'Cairo', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: none;
 }
 
 /* RTL support */
@@ -64,6 +70,13 @@ body {
 /* No tap highlight */
 button, a {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* ثبات الإحساس: الأزرار والروابط والصور مش بتتحدد ولا بتفتح قايمة ضغطة طويلة */
+button, a, img {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* Line clamp utilities */
