@@ -1,5 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
+import { supabase } from '@/lib/supabase';
 
 const MINUTE = 60 * 1000;
 
@@ -38,8 +39,30 @@ export const queryPersister = createSyncStoragePersister({
 });
 
 // نادي عليها بعد أي تعديل (إضافة/تعديل/حذف منتج أو تصنيف أو مخزون)
-export function invalidateCatalog() {
-  return Promise.all(
+export async function invalidateCatalog() {
+  await Promise.all(
     CACHEABLE_KEYS.map((k) => queryClient.invalidateQueries({ queryKey: [k] }))
   );
+
+  const catalogApiUrl = import.meta.env.VITE_CATALOG_API_URL?.replace(/\/$/, '');
+  if (!catalogApiUrl) return;
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+
+    const response = await fetch(`${catalogApiUrl}/invalidation`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ entityType: 'catalog' }),
+    });
+    if (!response.ok) {
+      console.warn('Shared catalog cache invalidation failed:', response.status);
+    }
+  } catch (error) {
+    console.warn('Shared catalog cache invalidation failed:', error);
+  }
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
+import { invalidateCatalog } from '@/lib/queryClient';
 import { Package, Search, AlertTriangle, CheckCircle, XCircle, Edit, Layers, Save, ScanLine, X, Eye } from 'lucide-react';
 import { BarcodeScannerModal } from '@/components/admin/BarcodeScannerModal';
 
@@ -57,6 +58,7 @@ export function AdminInventoryPage() {
       showToast(error.message, 'error');
     } else {
       showToast(lang === 'ar' ? 'تم تحديث المخزون بنجاح' : 'Stock updated successfully', 'success');
+      await invalidateCatalog();
       setProducts(products.map(p => p.id === id ? { ...p, stock_quantity: newQty } : p));
       setEditingId(null);
 

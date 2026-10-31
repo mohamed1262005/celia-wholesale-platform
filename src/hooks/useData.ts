@@ -6,6 +6,7 @@ import {
   type InfiniteData,
 } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { getCatalogCategories, getCatalogProduct, getCatalogProducts } from '@/lib/catalogApi';
 import { getAvailableStock } from '@/lib/pricing';
 import type { Category, Product, Order, AppNotification } from '@/types';
 
@@ -26,6 +27,9 @@ export function useCategories() {
     queryKey: ['categories'],
     staleTime: 15 * MINUTE,
     queryFn: async () => {
+      const apiCategories = await getCatalogCategories();
+      if (apiCategories !== undefined) return apiCategories;
+
       const { data, error } = await supabase
         .from('categories')
         .select('*')
@@ -87,6 +91,17 @@ export function useProducts(filters?: {
     queryKey: ['products', { categoryId, categorySlug, term, availability, sort, pageSize }],
     initialPageParam: 0,
     queryFn: async ({ pageParam }): Promise<ProductsPage> => {
+      const apiPage = await getCatalogProducts({
+        categoryId,
+        categorySlug,
+        search: term,
+        availability,
+        sort,
+        page: pageParam,
+        pageSize,
+      });
+      if (apiPage !== undefined) return apiPage;
+
       const from = pageParam * pageSize;
       const to = from + pageSize - 1;
 
@@ -162,6 +177,9 @@ export function useProduct(id: string | undefined) {
       return undefined;
     },
     queryFn: async () => {
+      const apiProduct = await getCatalogProduct(id!);
+      if (apiProduct !== undefined) return apiProduct;
+
       const { data, error } = await supabase
         .from('products')
         .select(`

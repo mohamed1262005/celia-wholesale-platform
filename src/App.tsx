@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { PushManager } from '@/components/PushManager';
+import { OfflineOrderSyncManager } from '@/components/OfflineOrderSyncManager';
 import { BackButtonHandler } from '@/components/BackButtonHandler';
 import { useEffect } from 'react';
 import { LanguageProvider } from '@/contexts/LanguageContext';
@@ -54,18 +55,8 @@ function ScrollToTop() {
   return null;
 }
 
-// حماية مسارات العملاء: لو مش مسجل هيروح لصفحة الـ login تلقائياً
-function ProtectedCustomerRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">جاري التحميل...</div>;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
+// الإطار المشترك لصفحات العملاء (الشريط العلوي + الفوتر)
+function CustomerLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -73,6 +64,34 @@ function ProtectedCustomerRoute({ children }: { children: React.ReactNode }) {
       <Footer />
     </div>
   );
+}
+
+// صفحات عامة: أي حد يقدر يتصفح المنتجات والتصنيفات والسلة من غير تسجيل دخول
+function PublicCustomerRoute({ children }: { children: React.ReactNode }) {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">جاري التحميل...</div>;
+  }
+
+  return <CustomerLayout>{children}</CustomerLayout>;
+}
+
+// حماية مسارات العملاء (الطلب والحساب): لو مش مسجل هيروح لصفحة الـ login ويرجع لنفس الصفحة بعد الدخول
+function ProtectedCustomerRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">جاري التحميل...</div>;
+  }
+
+  if (!user) {
+    const target = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?redirect=${target}`} replace />;
+  }
+
+  return <CustomerLayout>{children}</CustomerLayout>;
 }
 
 function AppRoutes() {
@@ -92,12 +111,14 @@ function AppRoutes() {
         </div>
       } />
 
-      {/* Protected Customer routes (Requires login) */}
-      <Route path="/" element={<ProtectedCustomerRoute><HomePage /></ProtectedCustomerRoute>} />
-      <Route path="/products" element={<ProtectedCustomerRoute><ProductsPage /></ProtectedCustomerRoute>} />
-      <Route path="/products/:id" element={<ProtectedCustomerRoute><ProductDetailPage /></ProtectedCustomerRoute>} />
-      <Route path="/categories" element={<ProtectedCustomerRoute><CategoriesPage /></ProtectedCustomerRoute>} />
-      <Route path="/cart" element={<ProtectedCustomerRoute><CartPage /></ProtectedCustomerRoute>} />
+      {/* Public Customer routes (تصفح مفتوح للجميع بدون تسجيل دخول) */}
+      <Route path="/" element={<PublicCustomerRoute><HomePage /></PublicCustomerRoute>} />
+      <Route path="/products" element={<PublicCustomerRoute><ProductsPage /></PublicCustomerRoute>} />
+      <Route path="/products/:id" element={<PublicCustomerRoute><ProductDetailPage /></PublicCustomerRoute>} />
+      <Route path="/categories" element={<PublicCustomerRoute><CategoriesPage /></PublicCustomerRoute>} />
+      <Route path="/cart" element={<PublicCustomerRoute><CartPage /></PublicCustomerRoute>} />
+
+      {/* Protected Customer routes (Requires login: إتمام الطلب والحساب) */}
       <Route path="/checkout" element={<ProtectedCustomerRoute><CheckoutPage /></ProtectedCustomerRoute>} />
       <Route path="/confirmation/:id" element={<ProtectedCustomerRoute><ConfirmationPage /></ProtectedCustomerRoute>} />
       <Route path="/orders" element={<ProtectedCustomerRoute><MyOrdersPage /></ProtectedCustomerRoute>} />
@@ -125,7 +146,7 @@ function AppRoutes() {
       </Route>
 
       {/* Fallback */}
-      <Route path="*" element={<ProtectedCustomerRoute><HomePage /></ProtectedCustomerRoute>} />
+      <Route path="*" element={<PublicCustomerRoute><HomePage /></PublicCustomerRoute>} />
     </Routes>
   );
 }
@@ -138,6 +159,7 @@ function App() {
           <CartProvider>
             <BrowserRouter>
               <ScrollToTop />
+              <OfflineOrderSyncManager />
               <PushManager />
               <BackButtonHandler />
               <AppRoutes />

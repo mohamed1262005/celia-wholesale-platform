@@ -77,12 +77,11 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
     <>
       <div className="group bg-white rounded-2xl border border-pink-100/60 shadow-xs hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between h-full transform hover:-translate-y-1">
 
-        {/* حاوية الصورة على ستايل التصنيفات الفخم (تأخذ المساحة بـ object-cover وتدرج أنيق) */}
+        {/* حاوية الصورة */}
         <div className="relative h-40 sm:h-44 w-full overflow-hidden bg-gray-900 flex items-center justify-center">
           <div className="absolute inset-0 block w-full h-full">
             {images.length > 0 ? (
               images.map((img: string, idx: number) => {
-                // نحمّل الصورة الحالية والتالية والسابقة فقط لتقليل الطلبات
                 const totalImages = images.length;
                 const isNear =
                   totalImages <= 3 ||
@@ -111,7 +110,6 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
             )}
           </div>
 
-          {/* تدرج لوني أسفل الصورة تماماً زي كروت التصنيفات لإبراز الفخامة */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
 
           {/* حالة المخزون */}
@@ -127,7 +125,7 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
             ) : null}
           </div>
 
-          {/* زر العين للمعاينة */}
+          {/* زر العين للمعاينة (هو الوحيد الذي يفتح النافذة) */}
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowQuickView(true); }}
             className="absolute top-2 end-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-gray-700 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white shadow-md cursor-pointer z-20 hover:scale-110"
@@ -159,20 +157,18 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
             </div>
           )}
 
-          {/* عنوان المنتج عائم فوق التدرج الداكن أسفل الصورة (بنفس ستايل التصنيفات) */}
+          {/* عنوان المنتج عائم أسفل الصورة (بدون رابط، عرض فقط لمنع الانتقال) */}
           <div className="absolute inset-x-0 bottom-2 px-3 z-10 pointer-events-none">
-            <Link to={`/products/${product.id}`} className="block pointer-events-auto">
-              <h3
-                className="font-extrabold text-xs text-white drop-shadow-md line-clamp-1 hover:text-pink-200 transition-colors"
-                title={name}
-              >
-                {name}
-              </h3>
-            </Link>
+            <h3
+              className="font-extrabold text-xs text-white drop-shadow-md line-clamp-1"
+              title={name}
+            >
+              {name}
+            </h3>
           </div>
         </div>
 
-        {/* محتوى وتفاصيل الكارت بالأسفل (الأسعار والأزرار) */}
+        {/* محتوى وتفاصيل الكارت بالأسفل */}
         <div className="p-2.5 flex flex-col justify-between flex-1 gap-2 bg-white">
           <div className="flex items-baseline justify-between pt-0.5">
             <div className="flex items-baseline gap-0.5">
@@ -223,6 +219,16 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
   const { showToast } = useToast();
   const [qty, setQty] = useState(1);
   const [modalImageIndex, setModalImageIndex] = useState(0);
+
+  // منع الاسكرول في الخلفية عند فتح نافذة المعاينة السريعة
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.documentElement.style.overflow = 'unset';
+    };
+  }, []);
 
   const name = lang === 'ar' ? ((product as any).name_ar || product.name) : ((product as any).name_en || product.name);
   const description = (product as any).description || (product as any).description_ar || (product as any).description_en;

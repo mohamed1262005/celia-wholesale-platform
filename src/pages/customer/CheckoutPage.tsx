@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { supabase } from '@/lib/supabase';
-import { getCurrentLocation, describeLocationError, mapsUrl, isValidPoint, type GeoPoint } from '@/lib/location';
+import { getCurrentLocation, describeLocationError, isValidPoint, type GeoPoint } from '@/lib/location';
+import {
+  findPendingOfflineOrder,
+  isNetworkFailure,
+  saveOfflineOrder,
+  submitOfflineCheckoutDraft,
+  type OfflineCheckoutDraft,
+} from '@/lib/offlineOrders';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Banknote, ShoppingBag, Package, Smartphone, ShieldCheck, Upload, Image as ImageIcon, X, MapPin, LocateFixed, ExternalLink } from 'lucide-react';
@@ -18,6 +24,7 @@ export function CheckoutPage() {
   const navigate = useNavigate();
   const ar = lang === 'ar';
   const [submitting, setSubmitting] = useState(false);
+  const [queuedKey, setQueuedKey] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'vodafone_cash' | 'instapay' | 'fawry'>('cod');
 
@@ -46,6 +53,27 @@ export function CheckoutPage() {
   const [locating, setLocating] = useState(false);
   const [saveAddress, setSaveAddress] = useState(true);
 
+  useEffect(() => {
+    if (!user?.id) return;
+    void findPendingOfflineOrder(user.id)
+      .then((draft) => setQueuedKey(draft?.idempotencyKey ?? null))
+      .catch(() => undefined);
+  }, [user?.id]);
+
+  useEffect(() => {
+    const handleOrderSynced = (event: Event) => {
+      const detail = (event as CustomEvent<{ idempotencyKey: string; orderId: string }>).detail;
+      if (!detail || (queuedKey && detail.idempotencyKey !== queuedKey)) return;
+      setQueuedKey(null);
+      navigate(`/confirmation/${detail.orderId}`);
+      clearCart();
+      void refreshProfile();
+    };
+
+    window.addEventListener('celia:offline-order-synced', handleOrderSynced);
+    return () => window.removeEventListener('celia:offline-order-synced', handleOrderSynced);
+  }, [queuedKey, navigate, clearCart, refreshProfile]);
+
   if (items.length === 0) {
     navigate('/cart');
     return null;
@@ -61,9 +89,7 @@ export function CheckoutPage() {
     if (file) {
       setReceiptFile(file);
       setReceiptPreview(URL.createObjectURL(file));
-      if (errors.receipt) {
-        setErrors({ ...errors, receipt: '' });
-      }
+      setErrors((previous) => ({ ...previous, receipt: '' }));
     }
   };
 
@@ -73,148 +99,71 @@ export function CheckoutPage() {
     try {
       const point = await getCurrentLocation();
       setGeo(point);
-      if (errors.address) setErrors({ ...errors, address: '' });
+      setErrors((previous) => ({ ...previous, address: '' }));
       showToast(ar ? 'تم تحديد موقعك بنجاح' : 'Location captured', 'success');
-    } catch (err: any) {
-      showToast(describeLocationError(err, ar), 'error');
+    } catch (error) {
+      showToast(describeLocationError(error, ar), 'error');
     } finally {
       setLocating(false);
     }
   };
 
   const validate = () => {
-    const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = t('fieldRequired');
-    if (!form.phone.trim()) e.phone = t('fieldRequired');
-    if (!form.governorate.trim()) e.governorate = t('fieldRequired');
-    // لو العميل حدد موقعه على الخريطة، كتابة العنوان بالتفصيل بتبقى اختيارية
-    if (!form.address.trim() && !geo) e.address = t('fieldRequired');
+    const nextErrors: Record<string, string> = {};
+    if (!form.name.trim()) nextErrors.name = t('fieldRequired');
+    if (!form.phone.trim()) nextErrors.phone = t('fieldRequired');
+    if (!form.governorate.trim()) nextErrors.governorate = t('fieldRequired');
+    if (!form.address.trim() && !geo) nextErrors.address = t('fieldRequired');
     if (paymentMethod !== 'cod') {
-      if (!form.transactionRef.trim()) e.transactionRef = t('fieldRequired');
-      if (!receiptFile) e.receipt = lang === 'ar' ? 'يرجى إرفاق صورة إيصال التحويل' : 'Please attach receipt image';
+      if (!form.transactionRef.trim()) nextErrors.transactionRef = t('fieldRequired');
+      if (!receiptFile) nextErrors.receipt = lang === 'ar' ? 'يرجى إرفاق صورة إيصال التحويل' : 'Please attach receipt image';
     }
-    setErrors(e);
-    return Object.keys(e).length === 0;
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSubmit = async () => {
-    if (!validate() || !user) return;
+    if (!validate() || !user || queuedKey) return;
     setSubmitting(true);
 
     try {
-      let receiptUrl = '';
+      const draft: OfflineCheckoutDraft = {
+        idempotencyKey: crypto.randomUUID(),
+        customerId: user.id,
+        customerEmail: user.email || null,
+        customerName: form.name,
+        customerPhone: form.phone,
+        governorate: form.governorate,
+        address: form.address,
+        deliveryNotes: form.deliveryNotes,
+        transactionRef: form.transactionRef,
+        paymentMethod,
+        language: lang,
+        saveAddress,
+        location: geo,
+        lines: items.map((item) => ({ productId: item.product.id, quantity: item.quantity })),
+        receipt: receiptFile ? { blob: receiptFile, name: receiptFile.name, type: receiptFile.type } : null,
+        createdAt: new Date().toISOString(),
+      };
 
-      // رفع صورة الإيصال إلى Supabase Storage إذا كانت موجودة
-      if (receiptFile) {
-        const fileExt = receiptFile.name.split('.').pop();
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-        const filePath = `receipts/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('orders')
-          .upload(filePath, receiptFile);
-
-        if (!uploadError) {
-          const { data: publicUrlData } = supabase.storage
-            .from('orders')
-            .getPublicUrl(filePath);
-          receiptUrl = publicUrlData.publicUrl;
-        } else {
-          console.warn('Storage upload warning:', uploadError);
-        }
+      if (!navigator.onLine) {
+        await saveOfflineOrder(draft);
+        setQueuedKey(draft.idempotencyKey);
+        showToast(ar ? 'تم حفظ الطلب وسيتم إرساله عند عودة الاتصال' : 'Order saved and will sync when connection returns', 'info');
+        return;
       }
 
-      // توليد رقم الطلب
-      const { data: orderNum } = await supabase.rpc('generate_order_number');
-      const finalOrderNum = orderNum || ('CEL-' + Math.floor(10000 + Math.random() * 90000));
-
-      // العنوان النصي (لو العميل ما كتبش تفاصيل واعتمد على الموقع)
-      const addressText = form.address.trim() || (ar ? 'حسب الموقع المحدد على الخريطة' : 'As pinned on the map');
-      const locationNote = geo ? `[الموقع: ${mapsUrl(geo)}]` : '';
-
-      // دمج العنوان مع بيانات الدفع ورابط الإيصال والموقع والملاحظات
-      const combinedAddress = `${form.governorate} - ${addressText} ${paymentMethod !== 'cod' ? `[طريقة الدفع: ${paymentMethod} | المرجع: ${form.transactionRef}${receiptUrl ? `| رابط الإيصال: ${receiptUrl}` : ''}]` : ''} ${locationNote} ${form.deliveryNotes ? `[ملاحظات: ${form.deliveryNotes}]` : ''}`;
-
-      // إرسال الطلب
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          order_number: finalOrderNum,
-          user_id: user.id,
-          customer_id: user.id,
-          customer_name: form.name,
-          customer_phone: form.phone,
-          phone: form.phone,
-          total_amount: Number(subtotal),
-          status: 'new',
-          payment_method: paymentMethod,
-          city: form.governorate,
-          address: addressText,
-          shipping_address: combinedAddress,
-          // أعمدة الموقع بتتبعت فقط لما العميل يحدد موقعه
-          ...(geo ? { delivery_lat: geo.lat, delivery_lng: geo.lng } : {}),
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      // حفظ عناصر الطلب في order_items
-      const orderItems = items.map(item => {
-        const productName = lang === 'ar' ? item.product.name_ar : item.product.name_en;
-        const unitPrice = Number(item.applicablePrice || 0);
-        const quantity = Number(item.quantity || 1);
-        return {
-          order_id: order.id,
-          product_id: item.product.id,
-          product_name: productName,
-          product_image: item.product.image_url,
-          quantity: quantity,
-          unit_price: unitPrice,
-          total: unitPrice * quantity,
-        };
-      });
-
-      const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
-      if (itemsError) throw itemsError;
-
-      // إرسال إشعار للأدمن يوضح اسم العميل ورقم الطلب والمبلغ بقالب احترافي
       try {
-        await supabase.from('notifications').insert({
-          title: 'طلب جملة جديد',
-          message: `قام العميل (${form.name}) بطلب جديد برقم ${finalOrderNum} بقيمة ${Number(subtotal).toFixed(2)} ج.م`,
-          user_id: null, // إشعار عام للأدمن أو لوحة التحكم
-          is_read: false
-        });
-      } catch (notifErr) {
-        console.warn('Notification insert warning:', notifErr);
+        const orderId = await submitOfflineCheckoutDraft(draft);
+        await refreshProfile();
+        clearCart();
+        navigate(`/confirmation/${orderId}`);
+      } catch (error) {
+        if (!isNetworkFailure(error)) throw error;
+        await saveOfflineOrder(draft);
+        setQueuedKey(draft.idempotencyKey);
+        showToast(ar ? 'تعذر الاتصال؛ تم حفظ الطلب للمزامنة لاحقًا' : 'Connection lost; order saved for later sync', 'info');
       }
-
-      // حفظ العنوان في ملف العميل للطلبات القادمة (لا يوقف الطلب لو فشل)
-      if (saveAddress) {
-        try {
-          const { error: saveError } = await supabase
-            .from('profiles')
-            .update({
-              governorate: form.governorate.trim(),
-              address: form.address.trim(),
-              address_lat: geo ? geo.lat : null,
-              address_lng: geo ? geo.lng : null,
-            })
-            .eq('id', user.id);
-
-          if (saveError) {
-            console.warn('Saved address warning:', saveError.message);
-          } else {
-            await refreshProfile();
-          }
-        } catch (saveErr) {
-          console.warn('Saved address warning:', saveErr);
-        }
-      }
-
-      clearCart();
-      navigate(`/confirmation/${order.id}`);
     } catch (err: any) {
       showToast(err?.message || t('error'), 'error');
       console.error(err);
@@ -226,6 +175,12 @@ export function CheckoutPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
       <h1 className="text-2xl lg:text-3xl font-extrabold text-gray-900 mb-6">{t('checkout')}</h1>
+
+      {queuedKey && (
+        <div role="status" className="mb-5 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+          {ar ? 'طلبك محفوظ على هذا الجهاز وسيتم إرساله تلقائيًا عند عودة الاتصال.' : 'Your order is saved on this device and will sync automatically when you reconnect.'}
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -511,6 +466,7 @@ export function CheckoutPage() {
               className="w-full mt-5"
               onClick={handleSubmit}
               loading={submitting}
+              disabled={Boolean(queuedKey)}
             >
               {submitting ? t('placingOrder') : t('placeOrder')}
             </Button>

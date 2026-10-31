@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
+import { invalidateCatalog } from '@/lib/queryClient';
 import { Plus, Search, Edit, Trash2, FolderTree, Layers, CheckCircle, Coffee, Cookie, Utensils, Sparkles, Package } from 'lucide-react';
 
 export function AdminCategoriesPage() {
@@ -74,6 +75,7 @@ export function AdminCategoriesPage() {
     } else {
       showToast(lang === 'ar' ? 'تم حذف التصنيف بنجاح' : 'Category deleted successfully', 'success');
       setCategories(categories.filter((c) => c.id !== id));
+      await invalidateCatalog();
     }
   };
 

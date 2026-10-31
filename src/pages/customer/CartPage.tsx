@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCart } from '@/contexts/CartContext';
@@ -5,11 +6,26 @@ import { QuantitySelector } from '@/components/ui/QuantitySelector';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { getAvailableStock } from '@/lib/pricing';
-import { Trash2, ShoppingBag, ArrowLeft, Package, Sparkles } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowLeft, Package, Sparkles, X, Eye } from 'lucide-react';
 
 export function CartPage() {
   const { t, lang } = useLanguage();
   const { items, updateQuantity, removeFromCart, subtotal, totalItems } = useCart();
+  
+  // حالة للتحكم في عرض صورة المنتج بشكل منبثق (Modal)
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  // منع الاسكرول في الخلفية عند فتح نافذة الصورة المنبثقة
+  useEffect(() => {
+    if (selectedImage) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedImage]);
 
   if (items.length === 0) {
     return (
@@ -51,17 +67,25 @@ export function CartPage() {
                 className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-white rounded-3xl border border-gray-100 shadow-card p-4 sm:p-5 hover:shadow-lg transition-all duration-300"
               >
                 {/* Image */}
-                <Link to={`/products/${item.product.id}`} className="flex-shrink-0 w-full sm:w-auto flex justify-center">
-                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50 border border-gray-50">
+                <div 
+                  onClick={() => item.product.image_url && setSelectedImage({ url: item.product.image_url, name })}
+                  className="flex-shrink-0 w-full sm:w-auto flex justify-center cursor-pointer group relative"
+                >
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50 border border-gray-50 relative">
                     {item.product.image_url ? (
-                      <img src={item.product.image_url} alt={name} className="w-full h-full object-cover" />
+                      <>
+                        <img src={item.product.image_url} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                          <Eye className="w-5 h-5" />
+                        </div>
+                      </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-primary-200">
                         <Package className="w-8 h-8 sm:w-10 sm:h-10" />
                       </div>
                     )}
                   </div>
-                </Link>
+                </div>
 
                 {/* Details */}
                 <div className="flex-1 min-w-0 w-full">
@@ -73,7 +97,6 @@ export function CartPage() {
                       {item.product.packaging && (
                         <p className="text-xs font-medium text-gray-400 mt-0.5 truncate">{item.product.packaging}</p>
                       )}
-                      {/* السعر للوحدة الواحدة (بدون كلمة وحدة، والجنيه بعد الرقم) */}
                       <p className="text-xs font-bold text-primary-600 mt-1.5 bg-primary-50/60 inline-block px-2.5 py-1 rounded-lg">
                         {item.applicablePrice.toFixed(2)} {t('currency')}
                       </p>
@@ -100,7 +123,6 @@ export function CartPage() {
                         <p className="text-[11px] font-bold text-warning-600 mt-1">الكمية المتاحة كحد أقصى: {available}</p>
                       )}
                     </div>
-                    {/* إجمالي سعر المنتج (الجنيه بعد الرقم) */}
                     <div className="text-start sm:text-end flex sm:flex-col justify-between items-center sm:items-end w-full sm:w-auto">
                       <p className="text-[11px] font-bold text-gray-400">{t('total')}</p>
                       <p className="text-base sm:text-lg font-black text-primary-600">
@@ -141,7 +163,6 @@ export function CartPage() {
               <div className="border-t border-dashed border-gray-200 pt-3">
                 <div className="flex justify-between items-center">
                   <span className="font-extrabold text-sm sm:text-base text-gray-900">{t('total')}</span>
-                  {/* الإجمالي النهائي (الجنيه بعد الرقم) */}
                   <span className="text-xl sm:text-2xl font-black text-primary-600">
                     {subtotal.toFixed(2)} <span className="text-xs font-bold">{t('currency')}</span>
                   </span>
@@ -157,6 +178,27 @@ export function CartPage() {
           </div>
         </div>
       </div>
+
+      {/* مودال تكبير الصورة مع منع الاسكرول في الخلفية */}
+      {selectedImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="relative bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl p-4">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-3">
+              <h3 className="font-bold text-gray-800 text-sm truncate">{selectedImage.name}</h3>
+              <button 
+                onClick={() => setSelectedImage(null)}
+                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors cursor-pointer"
+                title="إغلاق"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="w-full h-80 sm:h-96 rounded-2xl overflow-hidden bg-gray-50 flex items-center justify-center">
+              <img src={selectedImage.url} alt={selectedImage.name} className="w-full h-full object-contain" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

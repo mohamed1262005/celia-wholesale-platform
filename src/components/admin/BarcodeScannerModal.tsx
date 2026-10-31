@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import QrScanner from 'qr-scanner';
 import { supabase } from '@/lib/supabase';
+import { invalidateCatalog } from '@/lib/queryClient';
 import { ScanLine, Package, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 
 interface BarcodeScannerModalProps {
@@ -155,11 +156,15 @@ export function BarcodeScannerModal({ isOpen, onClose, onSuccess }: BarcodeScann
           return;
         }
         const newStock = currentStock - qtyToAdd;
-        await supabase.from('products').update({ stock_quantity: newStock }).eq('id', pendingProduct.id);
+        const { error } = await supabase.from('products').update({ stock_quantity: newStock }).eq('id', pendingProduct.id);
+        if (error) throw error;
+        await invalidateCatalog();
         onSuccess(`تم بيع (${qtyToAdd}) قطعة من: ${pendingProduct.name_ar || pendingProduct.name_en} 🛒`);
       } else {
         const newStock = currentStock + qtyToAdd;
-        await supabase.from('products').update({ stock_quantity: newStock }).eq('id', pendingProduct.id);
+        const { error } = await supabase.from('products').update({ stock_quantity: newStock }).eq('id', pendingProduct.id);
+        if (error) throw error;
+        await invalidateCatalog();
         onSuccess(`تم توريد (${qtyToAdd}) قطعة لـ: ${pendingProduct.name_ar || pendingProduct.name_en} 📦`);
       }
 
@@ -194,13 +199,15 @@ export function BarcodeScannerModal({ isOpen, onClose, onSuccess }: BarcodeScann
       if (insertError) throw insertError;
 
       if (newProd) {
-        await supabase.from('pricing_tiers').insert({
+        const { error: tierError } = await supabase.from('pricing_tiers').insert({
           product_id: newProd.id,
           min_quantity: 1,
           max_quantity: null,
           unit_price: parseFloat(newPrice) || 0,
           sort_order: 0
         });
+        if (tierError) throw tierError;
+        await invalidateCatalog();
 
         onSuccess(`تمت إضافة "${newNameAr}" بنجاح للمخزن! 🚀`);
         setNewProductCode(null);

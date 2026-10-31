@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +11,12 @@ export function LoginPage() {
   const { lang, setLang } = useLanguage();
   const auth: any = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // الصفحة اللي كان العميل رايحلها قبل ما يتطلب منه تسجيل الدخول (مثلاً /checkout)
+  // بنقبل مسارات داخل التطبيق فقط (مش روابط خارجية)
+  const rawRedirect = searchParams.get('redirect');
+  const redirectTo = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : null;
 
   const [identifier, setIdentifier] = useState(''); // يقبل بريد إلكتروني أو رقم هاتف
   const [password, setPassword] = useState('');
@@ -52,7 +58,8 @@ export function LoginPage() {
         });
         if (authError) throw authError;
       }
-      navigate('/');
+      if (redirectTo) navigate(redirectTo, { replace: true });
+      else navigate('/');
     } catch (err: any) {
       setError(err.message || (lang === 'ar' ? 'فشل تسجيل الدخول. تأكد من البيانات' : 'Login failed. Please check your credentials'));
     } finally {
@@ -89,6 +96,14 @@ export function LoginPage() {
             <h2 className="text-2xl font-extrabold text-gray-900">{lang === 'ar' ? 'أهلاً بك مجدداً' : 'Welcome Back'}</h2>
             <p className="text-xs text-gray-500 mt-1">{lang === 'ar' ? 'سجل دخولك للوصول إلى لوحة التحكم والطلبات' : 'Sign in to access dashboard and orders'}</p>
           </div>
+
+          {redirectTo && (
+            <div className="mb-4 p-3 bg-primary-50 border border-primary-100 text-primary-700 text-xs font-medium rounded-xl text-center">
+              {lang === 'ar'
+                ? 'سجّل دخولك أو أنشئ حساباً جديداً لإتمام طلبك. سلّتك محفوظة وهتلاقيها زي ما هي.'
+                : 'Sign in or create an account to complete your order. Your cart is saved.'}
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-xs font-medium rounded-xl text-center">
@@ -170,7 +185,7 @@ export function LoginPage() {
 
           <div className="mt-6 text-center text-xs text-gray-500">
             {lang === 'ar' ? 'ليس لديك حساب؟' : "Don't have an account?"}{' '}
-            <Link to="/register" className="text-primary-600 font-bold hover:text-teal-600 transition-colors hover:underline">
+            <Link to={redirectTo ? `/register?redirect=${encodeURIComponent(redirectTo)}` : '/register'} className="text-primary-600 font-bold hover:text-teal-600 transition-colors hover:underline">
               {lang === 'ar' ? 'سجل الآن' : 'Sign up'}
             </Link>
           </div>

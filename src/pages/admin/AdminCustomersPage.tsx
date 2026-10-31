@@ -20,90 +20,92 @@ export function AdminCustomersPage() {
   const fetchCustomersAndOrders = async () => {
     setLoading(true);
 
-    // 1. جلب العملاء
-    let rawCustomers: any[] = [];
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      // 1. جلب العملاء حصرياً من جدول profiles الموجود في قاعدة البيانات
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      const altRes = await supabase.from('customers').select('*').order('created_at', { ascending: false });
-      if (altRes.error) {
-        showToast(altRes.error.message, 'error');
-      } else {
-        rawCustomers = altRes.data || [];
+      if (profilesError) {
+        showToast(profilesError.message, 'error');
+        setLoading(false);
+        return;
       }
-    } else {
-      rawCustomers = data || [];
-    }
 
-    // إزالة التكرار بناءً على الـ id أو الـ email لمنع ظهور العميل مرتين
-    const uniqueCustomersMap = new Map();
-    rawCustomers.forEach(c => {
-      const identifier = c.id || c.email;
-      if (identifier && !uniqueCustomersMap.has(identifier)) {
-        // استبعاد الأدمن
-        if (c.role !== 'admin' && c.email !== 'admin' && c.name !== 'admin' && c.full_name !== 'admin') {
-          uniqueCustomersMap.set(identifier, c);
-        }
-      }
-    });
+      const rawCustomers = profilesData || [];
 
-    const filteredProfiles = Array.from(uniqueCustomersMap.values());
-
-    // 2. جلب الطلبات بشكل آمن
-    const { data: ordersData } = await supabase
-      .from('orders')
-      .select('id, user_id, customer_id, total_amount, created_at, status');
-
-    const orders = ordersData || [];
-
-    // 3. جلب عناصر الطلبات بشكل آمن
-    const { data: orderItemsData } = await supabase
-      .from('order_items')
-      .select('id, order_id, product_name, quantity, price');
-
-    const orderItems = orderItemsData || [];
-
-    // 4. دمج البيانات وحساب الإحصائيات بدقة فريدة لكل عميل
-    const mappedCustomers = filteredProfiles.map(customer => {
-      const customerOrders = orders.filter(o => 
-        o.user_id === customer.id || o.customer_id === customer.id
-      );
-
-      const totalSpent = customerOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
-      const ordersCount = customerOrders.length;
-
-      const orderedProducts: string[] = [];
-      customerOrders.forEach(order => {
-        const itemsForThisOrder = orderItems.filter(item => item.order_id === order.id);
-        itemsForThisOrder.forEach((item: any) => {
-          if (item.product_name && !orderedProducts.includes(item.product_name)) {
-            orderedProducts.push(item.product_name);
+      // إزالة التكرار بناءً على الـ id أو الـ email
+      const uniqueCustomersMap = new Map();
+      rawCustomers.forEach(c => {
+        const identifier = c.id || c.email;
+        if (identifier && !uniqueCustomersMap.has(identifier)) {
+          // استبعاد الأدمن
+          if (c.role !== 'admin' && c.email !== 'admin' && c.name !== 'admin' && c.full_name !== 'admin') {
+            uniqueCustomersMap.set(identifier, c);
           }
-        });
+        }
       });
 
-      return {
-        ...customer,
-        ordersCount,
-        totalSpent,
-        orderedProducts,
-        lastOrderDate: customerOrders.length > 0 ? customerOrders[0].created_at : null
-      };
-    });
+      const filteredProfiles = Array.from(uniqueCustomersMap.values());
 
-    // تحديد العملاء المميزين
-    mappedCustomers.forEach(c => {
-      c.isVip = c.ordersCount > 0 || c.totalSpent > 0;
-    });
+      // 2. جلب الطلبات من جدول orders
+      const { data: ordersData } = await supabase
+        .from('orders')
+        .select('*');
 
-    // ترتيب العملاء تنازلياً حسب إجمالي المشتريات والطلبات
-    mappedCustomers.sort((a, b) => b.totalSpent - a.totalSpent || b.ordersCount - a.ordersCount);
+      const orders = ordersData || [];
 
-    setCustomers(mappedCustomers);
-    setLoading(false);
+      // 3. جلب عناصر الطلبات من جدول order_items
+      const { data: orderItemsData } = await supabase
+        .from('order_items')
+        .select('*');
+
+      const orderItems = orderItemsData || [];
+
+      // 4. دمج البيانات وحساب الإحصائيات لكل عميل
+      const mappedCustomers = filteredProfiles.map(customer => {
+        const customerOrders = orders.filter(o => 
+          o.user_id === customer.id || o.customer_id === customer.id || o.profile_id === customer.id
+        );
+
+        const totalSpent = customerOrders.reduce((sum, o) => sum + (Number(o.total_amount || o.total || 0) || 0), 0);
+        const ordersCount = customerOrders.length;
+
+        const orderedProducts: string[] = [];
+        customerOrders.forEach(order => {
+          const itemsForThisOrder = orderItems.filter(item => item.order_id === order.id);
+          itemsForThisOrder.forEach((item: any) => {
+            const productName = item.product_name || item.name || item.title;
+            if (productName && !orderedProducts.includes(productName)) {
+              orderedProducts.push(productName);
+            }
+          });
+        });
+
+        return {
+          ...customer,
+          ordersCount,
+          totalSpent,
+          orderedProducts,
+          lastOrderDate: customerOrders.length > 0 ? customerOrders[0].created_at : null
+        };
+      });
+
+      // تحديد العملاء المميزين
+      mappedCustomers.forEach(c => {
+        c.isVip = c.ordersCount > 0 || c.totalSpent > 0;
+      });
+
+      // ترتيب العملاء تنازلياً حسب المشتريات والطلبات
+      mappedCustomers.sort((a, b) => b.totalSpent - a.totalSpent || b.ordersCount - a.ordersCount);
+
+      setCustomers(mappedCustomers);
+    } catch (err: any) {
+      console.error('Error fetching customers:', err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredCustomers = customers.filter((customer) => {
@@ -179,7 +181,7 @@ export function AdminCustomersPage() {
           <div>
             <p className="text-xs font-bold text-gray-500">حالة النظام</p>
             <h3 className="text-xl font-extrabold text-gray-900 mt-1">متصل ومحمي</h3>
-            <span className="text-xs text-emerald-600 font-bold mt-1 inline-block">بدون أخطاء برمجية</span>
+            
           </div>
           <div className="w-12 h-12 rounded-2xl bg-emerald-100/60 text-emerald-600 flex items-center justify-center font-bold shadow-xs">
             <ShieldCheck className="w-6 h-6" />
@@ -194,7 +196,7 @@ export function AdminCustomersPage() {
           <Search className="absolute right-4 top-3.5 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder={lang === 'ar' ? 'ابحث عن عميل بالاسم أو البريد...' : 'Search customers by name or email...'}
+            placeholder={lang === 'ar' ? 'ابحث عن عميل...' : 'Search customers by name or email...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pr-11 pl-4 py-3 bg-white text-gray-900 border border-pink-100 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-2xs"
