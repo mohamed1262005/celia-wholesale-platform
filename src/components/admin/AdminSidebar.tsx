@@ -41,8 +41,8 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
   };
 
   return (
-    <div className="flex flex-col h-full w-64 bg-white border-e border-gray-100 shadow-lg md:shadow-none">
-      <div className="px-5 py-5 border-b border-gray-100 flex items-center justify-between">
+    <div className="flex flex-col h-full w-64 bg-primary-50 border-e border-primary-100 shadow-lg md:shadow-none">
+      <div className="px-5 py-4 border-b border-primary-100 flex items-center justify-between">
         <div>
           <Logo size="md" />
           <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-50 text-primary-600 text-xs font-semibold">

@@ -11,7 +11,7 @@ interface BadgeProps {
 
 const variantClasses: Record<Variant, string> = {
   primary: 'bg-primary-50 text-primary-700 ring-primary-200',
-  secondary: 'bg-secondary-50 text-secondary-700 ring-secondary-200',
+  secondary: 'bg-primary-50 text-primary-700 ring-primary-200',
   success: 'bg-success-50 text-success-700 ring-success-200',
   warning: 'bg-warning-50 text-warning-600 ring-warning-200',
   error: 'bg-error-50 text-error-600 ring-error-200',
@@ -21,7 +21,7 @@ const variantClasses: Record<Variant, string> = {
 
 const dotColors: Record<Variant, string> = {
   primary: 'bg-primary-500',
-  secondary: 'bg-secondary-500',
+  secondary: 'bg-primary-500',
   success: 'bg-success-500',
   warning: 'bg-warning-500',
   error: 'bg-error-500',

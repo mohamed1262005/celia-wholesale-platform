@@ -86,7 +86,18 @@ export function NotificationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notifIdsKey]);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div role="status" aria-label={t('loading')} className="max-w-3xl mx-auto px-4 py-6">
+        <div className="skeleton h-8 w-44 rounded-xl mb-5" />
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="skeleton h-20 rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (!user) return <Navigate to="/login?redirect=/notifications" replace />;
 
   // تحليل محتوى الإشعار واستخراج تفاصيل الطلب الحية

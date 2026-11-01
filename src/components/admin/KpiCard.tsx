@@ -10,7 +10,7 @@ interface KpiCardProps {
 
 const colorClasses = {
   primary: 'bg-primary-50 text-primary-600',
-  secondary: 'bg-secondary-50 text-secondary-600',
+  secondary: 'bg-primary-50 text-primary-700',
   accent: 'bg-accent-50 text-accent-600',
   success: 'bg-success-50 text-success-600',
   warning: 'bg-warning-50 text-warning-600',

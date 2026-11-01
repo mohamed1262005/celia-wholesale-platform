@@ -5,6 +5,7 @@ import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import { Bell, CheckCircle, AlertTriangle, Sparkles, Menu, Trash2, Eye } from 'lucide-react';
+import { PageBackButton } from '@/components/ui/PageBackButton';
 
 export function AdminLayout() {
   const { lang } = useLanguage();
@@ -136,7 +137,7 @@ export function AdminLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-slate-50/50 to-primary-50/20 overflow-hidden relative">
+    <div className="flex h-screen bg-gradient-to-br from-primary-100 via-primary-50 to-white overflow-hidden relative">
       <div className="hidden md:block h-full">
         <AdminSidebar />
       </div>
@@ -155,8 +156,9 @@ export function AdminLayout() {
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         {/* الهيدر العلوي ثابت ومستقر مهما كانت مسافة التمرير */}
-        <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-gray-100 px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-xs w-full">
+        <header className="sticky top-0 z-40 bg-primary-50/95 backdrop-blur-xl border-b border-primary-200/70 px-4 sm:px-6 py-3 flex items-center justify-between shadow-xs w-full">
           <div className="flex items-center gap-3">
+            <PageBackButton className="min-h-10 px-3 py-1.5 text-xs sm:text-sm" />
             <button
               onClick={() => setIsMobileSidebarOpen(true)}
               className="md:hidden p-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer"
@@ -165,7 +167,7 @@ export function AdminLayout() {
               <Menu className="w-5 h-5" />
             </button>
 
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-primary-500/10 to-secondary-500/10 border border-primary-500/20">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-primary-500/10 to-pink-500/10 border border-primary-500/20">
               <Sparkles className="w-4 h-4 text-primary-600" />
               <span className="text-xs font-bold text-primary-700">
                 {lang === 'ar' ? 'نظام الإدارة الذكي' : 'AI Management System'}
@@ -282,7 +284,7 @@ export function AdminLayout() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+        <main className="admin-page-content flex-1 p-3 sm:p-4 lg:p-5 max-w-7xl w-full mx-auto space-y-4 sm:space-y-5">
           <Outlet />
         </main>
       </div>

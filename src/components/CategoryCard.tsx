@@ -16,7 +16,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
       to={`/products?category=${category.id}`}
       className="group relative block bg-white rounded-2xl border border-gray-100 shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden"
     >
-      <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50 relative">
+      <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-primary-50 to-pink-100 relative">
         {category.image_url ? (
           <img
             src={category.image_url}

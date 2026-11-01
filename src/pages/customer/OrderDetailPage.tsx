@@ -160,7 +160,7 @@ export function OrderDetailPage() {
                 const itemTotal = Number(item.total ?? (unitPrice * quantity)) || 0;
                 return (
                   <div key={item.id} className="flex items-center gap-4 p-4">
-                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50 flex-shrink-0">
+                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-gradient-to-br from-primary-50 to-pink-100 flex-shrink-0">
                       {item.product_image ? (
                         <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" />
                       ) : (

@@ -23,6 +23,16 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior-y: none;
+  background-color: #fdf2f8;
+}
+
+.customer-page-content > :first-child[class*='py-'] {
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+}
+
+.admin-page-content > :first-child[class*='py-'] {
+  padding-top: 1rem !important;
 }
 
 /* RTL support */
@@ -52,7 +62,7 @@ body {
 
 /* Skeleton shimmer */
 .skeleton {
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background: linear-gradient(90deg, #fce7f3 25%, #fbcfe8 50%, #fce7f3 75%);
   background-size: 1000px 100%;
   animation: shimmer 1.5s infinite linear;
 }

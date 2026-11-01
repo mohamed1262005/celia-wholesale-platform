@@ -7,7 +7,7 @@ export function AdminRoute({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div role="status" aria-live="polite" className="min-h-screen flex items-center justify-center bg-primary-50">
         <div className="flex flex-col items-center gap-3">
           <svg className="w-8 h-8 animate-spin text-primary-500" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />

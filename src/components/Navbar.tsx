@@ -110,7 +110,7 @@ export function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm w-full">
+    <header className="sticky top-0 z-40 bg-primary-50/95 backdrop-blur-md border-b border-primary-100 shadow-sm w-full">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2">
 
@@ -268,7 +268,7 @@ export function Navbar() {
             >
               <ShoppingBag className="w-5 h-5" />
               {totalItems > 0 && (
-                <span className="absolute top-1 end-1 w-4 h-4 rounded-full bg-secondary-500 text-white text-[10px] font-bold flex items-center justify-center">
+                <span className="absolute top-1 end-1 w-4 h-4 rounded-full bg-primary-600 text-white text-[10px] font-bold flex items-center justify-center">
                   {totalItems > 9 ? '9+' : totalItems}
                 </span>
               )}

@@ -234,12 +234,12 @@ export function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-teal-200 shadow-xs p-4 sm:p-5 flex items-center justify-between bg-gradient-to-br from-teal-50/70 to-white">
+        <div className="rounded-2xl border border-primary-200 shadow-xs p-4 sm:p-5 flex items-center justify-between bg-gradient-to-br from-primary-50/80 to-white">
           <div className="min-w-0 flex-1">
             <p className="text-xs text-gray-500 font-medium truncate">{t('totalCustomers')}</p>
             <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mt-1 truncate">{stats.totalCustomers}</h3>
           </div>
-          <div className="w-11 h-11 rounded-2xl bg-[#00C7B7] text-white flex items-center justify-center shadow-md shadow-teal-500/20">
+          <div className="w-11 h-11 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20">
             <Users className="w-5 h-5" />
           </div>
         </div>

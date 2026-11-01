@@ -320,7 +320,7 @@ export function QrScannerModal({ open, onClose, onProductFound, onAddNew }: QrSc
               <span className="text-sm font-bold">{t('qrProductFound')}</span>
             </div>
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary-50 to-pink-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                 {foundProduct.image_url ? (
                   <img src={foundProduct.image_url} alt="" className="w-full h-full object-cover" />
                 ) : (

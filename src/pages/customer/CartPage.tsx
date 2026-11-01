@@ -71,7 +71,7 @@ export function CartPage() {
                   onClick={() => item.product.image_url && setSelectedImage({ url: item.product.image_url, name })}
                   className="flex-shrink-0 w-full sm:w-auto flex justify-center cursor-pointer group relative"
                 >
-                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50 border border-gray-50 relative">
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-gradient-to-br from-primary-50 to-pink-100 border border-primary-100 relative">
                     {item.product.image_url ? (
                       <>
                         <img src={item.product.image_url} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />

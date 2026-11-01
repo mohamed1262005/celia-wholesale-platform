@@ -141,7 +141,15 @@ export async function submitOfflineCheckoutDraft(draft: OfflineCheckoutDraft): P
       quantity: line.quantity,
     })),
   });
-  if (error) throw error;
+  if (error) {
+    if (error.code === 'PGRST202' || error.message.toLowerCase().includes('could not find the function')) {
+      console.error('The place_order RPC is missing from the Supabase schema cache:', error);
+      throw new Error(draft.language === 'ar'
+        ? 'خدمة إتمام الطلب غير مفعّلة على قاعدة البيانات. يجب على المسؤول تطبيق ملف supabase/migrations/20261031000000_offline_checkout_and_inventory.sql على مشروع Supabase ثم إعادة المحاولة.'
+        : 'Checkout is not enabled in the database yet. Ask the administrator to apply supabase/migrations/20261031000000_offline_checkout_and_inventory.sql to the Supabase project, then try again.');
+    }
+    throw error;
+  }
 
   const result = Array.isArray(data) ? data[0] : data;
   const orderId = result && typeof result === 'object' && 'id' in result
@@ -153,16 +161,19 @@ export async function submitOfflineCheckoutDraft(draft: OfflineCheckoutDraft): P
   });
 
   if (draft.saveAddress) {
-    void supabase.from('profiles').update({
-      governorate: draft.governorate.trim(),
-      address: draft.address.trim(),
-      address_lat: draft.location?.lat ?? null,
-      address_lng: draft.location?.lng ?? null,
-    }).eq('id', draft.customerId).then(({ error }) => {
-      if (error) console.warn('Could not save the customer address after placing an order:', error);
-    }).catch((error) => {
-      console.warn('Could not save the customer address after placing an order:', error);
-    });
+    void (async () => {
+      try {
+        const { error: addressError } = await supabase.from('profiles').update({
+          governorate: draft.governorate.trim(),
+          address: draft.address.trim(),
+          address_lat: draft.location?.lat ?? null,
+          address_lng: draft.location?.lng ?? null,
+        }).eq('id', draft.customerId);
+        if (addressError) console.warn('Could not save the customer address after placing an order:', addressError);
+      } catch (error) {
+        console.warn('Could not save the customer address after placing an order:', error);
+      }
+    })();
   }
 
   return orderId;

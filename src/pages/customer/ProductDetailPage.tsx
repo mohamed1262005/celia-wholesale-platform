@@ -140,7 +140,7 @@ export function ProductDetailPage() {
       <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
         {/* Image */}
         <div className="relative">
-          <div className="aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50 shadow-card relative">
+          <div className="aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-primary-50 to-pink-100 shadow-card relative">
             {images.length > 0 ? (
               <img src={images[activeImage] || images[0]} alt={name} className="w-full h-full object-cover" />
             ) : (

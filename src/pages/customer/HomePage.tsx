@@ -41,7 +41,7 @@ export function HomePage() {
     <div className="w-full max-w-full overflow-x-hidden box-border pb-16">
       
       {/* Hero Section */}
-      <section className="relative w-full overflow-hidden bg-white py-3 sm:py-5">
+      <section className="relative w-full overflow-hidden bg-primary-50 py-3 sm:py-4">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-white border border-pink-100 p-4 sm:p-6 shadow-xs flex flex-col gap-4">
             

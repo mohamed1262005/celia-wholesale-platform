@@ -283,13 +283,13 @@ export function AdminReportsPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-teal-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-teal-50/70 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
+        <div className="rounded-2xl border border-primary-200 shadow-xs p-3 sm:p-5 flex items-center justify-between bg-gradient-to-br from-primary-50/80 to-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer">
           <div className="min-w-0">
             <p className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">{t('unitsSold')}</p>
             <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{totals.units}</h3>
             <span className="text-[10px] sm:text-xs text-emerald-600 font-semibold mt-1 inline-block">إجمالي القطع</span>
           </div>
-          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-[#00C7B7] text-white flex items-center justify-center shadow-md shadow-teal-500/20 flex-shrink-0">
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 flex-shrink-0">
             <Package className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
@@ -405,7 +405,7 @@ export function AdminReportsPage() {
               <div key={i} className="flex-1 flex flex-col items-center gap-2 min-w-0">
                 <div className="w-full flex-1 flex items-end">
                   <div
-                    className="w-full rounded-t-lg bg-gradient-to-t from-secondary-400 to-secondary-600 transition-all duration-700 hover:opacity-80 relative group"
+                    className="w-full rounded-t-lg bg-gradient-to-t from-primary-400 to-primary-700 transition-all duration-700 hover:opacity-80 relative group"
                     style={{ height: `${(m.value / maxOrders) * 100}%`, minHeight: '4px' }}
                   >
                     <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity bg-white px-1 shadow rounded">

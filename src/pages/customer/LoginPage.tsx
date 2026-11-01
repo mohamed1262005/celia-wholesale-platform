@@ -68,20 +68,20 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-pink-950 relative overflow-hidden p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-pink-950 relative overflow-hidden p-4 sm:p-6 lg:p-8 pt-28 sm:pt-24">
 
       {/* خلفية تفاعلية متوهجة (Ambient Glows) */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-32 -start-32 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute -bottom-32 -end-32 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s' }} />
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-teal-400/70 to-transparent" />
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-pink-300/70 to-transparent" />
       </div>
 
       {/* زر تغيير اللغة أعلى اليسار */}
       <div className="absolute top-6 start-6 z-20">
         <button
           onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-          className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-teal-400/20 hover:border-teal-300/40 text-white hover:text-teal-100 text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-300 cursor-pointer shadow-sm hover:scale-105"
+          className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-pink-400/20 hover:border-pink-300/40 text-white hover:text-pink-100 text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-300 cursor-pointer shadow-sm hover:scale-105"
         >
           {lang === 'ar' ? 'English' : 'العربية'}
         </button>
@@ -134,7 +134,7 @@ export function LoginPage() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-bold text-gray-700">{lang === 'ar' ? 'كلمة المرور' : 'Password'}</label>
-                <Link to="/forgot-password" className="text-[11px] font-semibold text-primary-600 hover:text-teal-600 transition-colors hover:underline">
+                <Link to="/forgot-password" className="text-[11px] font-semibold text-primary-600 hover:text-primary-800 transition-colors hover:underline">
                   {lang === 'ar' ? 'هل نسيت كلمة المرور؟' : 'Forgot password?'}
                 </Link>
               </div>
@@ -177,7 +177,7 @@ export function LoginPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-primary-600 to-primary-700 hover:from-teal-500 hover:to-teal-600 text-white shadow-lg shadow-primary-500/25 hover:shadow-teal-500/30 transition-all duration-500 transform hover:scale-[1.02] active:scale-95 cursor-pointer"
+              className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/30 transition-all duration-500 transform hover:scale-[1.02] active:scale-95 cursor-pointer"
             >
               {loading ? (lang === 'ar' ? 'جاري تسجيل الدخول...' : 'Signing in...') : (lang === 'ar' ? 'تسجيل الدخول' : 'Sign In')}
             </Button>
@@ -185,7 +185,7 @@ export function LoginPage() {
 
           <div className="mt-6 text-center text-xs text-gray-500">
             {lang === 'ar' ? 'ليس لديك حساب؟' : "Don't have an account?"}{' '}
-            <Link to={redirectTo ? `/register?redirect=${encodeURIComponent(redirectTo)}` : '/register'} className="text-primary-600 font-bold hover:text-teal-600 transition-colors hover:underline">
+            <Link to={redirectTo ? `/register?redirect=${encodeURIComponent(redirectTo)}` : '/register'} className="text-primary-600 font-bold hover:text-primary-800 transition-colors hover:underline">
               {lang === 'ar' ? 'سجل الآن' : 'Sign up'}
             </Link>
           </div>
@@ -258,7 +258,7 @@ export function LoginPage() {
             </svg>
 
             <div className="absolute inset-0 bg-gradient-to-br from-primary-900/85 via-primary-800/80 to-pink-950/90" />
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-teal-400 via-teal-300 to-transparent" />
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-pink-400 via-pink-300 to-transparent" />
 
             <div className="relative text-white space-y-6 p-8 lg:p-10">
 

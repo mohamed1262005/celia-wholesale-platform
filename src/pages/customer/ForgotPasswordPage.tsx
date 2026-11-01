@@ -280,7 +280,7 @@ export function ForgotPasswordPage() {
   const stepIndex = step === 'request' ? 1 : step === 'verify' ? 2 : 3;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-100 via-primary-50 to-white px-4 py-4 pt-28 sm:pt-24">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-between mb-8">
           <Logo to="/" size="md" />

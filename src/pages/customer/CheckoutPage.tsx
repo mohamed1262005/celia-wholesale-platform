@@ -443,7 +443,7 @@ export function CheckoutPage() {
                 const name = lang === 'ar' ? item.product.name_ar : item.product.name_en;
                 return (
                   <div key={item.product.id} className="flex gap-3">
-                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50 flex-shrink-0">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-pink-100 flex-shrink-0">
                       {item.product.image_url ? (
                         <img src={item.product.image_url} alt={name} className="w-full h-full object-cover" />
                       ) : (

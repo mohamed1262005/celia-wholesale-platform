@@ -13,7 +13,18 @@ export function MyOrdersPage() {
   const { user, loading } = useAuth();
   const { orders, loading: ordersLoading } = useOrders(user?.id);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div role="status" aria-label={t('loading')} className="max-w-4xl mx-auto px-4 py-6">
+        <div className="skeleton h-8 w-44 rounded-xl mb-5" />
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="skeleton h-24 rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (!user) return <Navigate to="/login?redirect=/orders" replace />;
 
   if (orders.length === 0 && !ordersLoading) {

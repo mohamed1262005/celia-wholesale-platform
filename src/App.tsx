@@ -3,7 +3,7 @@ import { PushManager } from '@/components/PushManager';
 import { OfflineOrderSyncManager } from '@/components/OfflineOrderSyncManager';
 import { BackButtonHandler } from '@/components/BackButtonHandler';
 import { useEffect } from 'react';
-import { LanguageProvider } from '@/contexts/LanguageContext';
+import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
 import { ToastProvider } from '@/contexts/ToastContext';
@@ -13,6 +13,7 @@ import { Footer } from '@/components/Footer';
 import { AdminRoute } from '@/components/admin/AdminRoute';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { PrivacyPolicyPage } from '@/pages/customer/PrivacyPolicyPage';
+import { PageBackButton } from '@/components/ui/PageBackButton';
 
 // Customer pages
 import { HomePage } from '@/pages/customer/HomePage';
@@ -55,12 +56,27 @@ function ScrollToTop() {
   return null;
 }
 
+function AppLoadingScreen() {
+  const { t } = useLanguage();
+  return (
+    <div role="status" aria-live="polite" className="min-h-screen flex flex-col items-center justify-center gap-3 bg-primary-50 text-primary-700">
+      <span aria-hidden="true" className="h-10 w-10 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
+      <span className="text-sm font-bold">{t('loading')}</span>
+    </div>
+  );
+}
+
 // الإطار المشترك لصفحات العملاء (الشريط العلوي + الفوتر)
 function CustomerLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="customer-layout min-h-screen flex flex-col bg-primary-50">
       <Navbar />
-      <div className="flex-1">{children}</div>
+      <div className="border-b border-primary-200/80 bg-primary-100/80">
+        <div className="mx-auto max-w-7xl px-3 py-2 sm:px-5 lg:px-7">
+          <PageBackButton />
+        </div>
+      </div>
+      <div className="customer-page-content flex-1">{children}</div>
       <Footer />
     </div>
   );
@@ -71,7 +87,7 @@ function PublicCustomerRoute({ children }: { children: React.ReactNode }) {
   const { loading } = useAuth();
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">جاري التحميل...</div>;
+    return <AppLoadingScreen />;
   }
 
   return <CustomerLayout>{children}</CustomerLayout>;
@@ -83,7 +99,7 @@ function ProtectedCustomerRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">جاري التحميل...</div>;
+    return <AppLoadingScreen />;
   }
 
   if (!user) {
@@ -98,18 +114,12 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Auth routes (no navbar/footer & accessible to guests) */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/login" element={<><PageBackButton className="fixed top-16 start-4 z-30 shadow-md" /><LoginPage /></>} />
+      <Route path="/register" element={<><PageBackButton className="fixed top-16 start-4 z-30 shadow-md" /><RegisterPage /></>} />
+      <Route path="/forgot-password" element={<><PageBackButton className="fixed top-16 start-4 z-30 shadow-md" /><ForgotPasswordPage /></>} />
 
       {/* Public Privacy Policy Route (Accessible to everyone & Google Play crawler) */}
-      <Route path="/privacy-policy" element={
-        <div className="min-h-screen flex flex-col bg-gray-50">
-          <Navbar />
-          <div className="flex-1"><PrivacyPolicyPage /></div>
-          <Footer />
-        </div>
-      } />
+      <Route path="/privacy-policy" element={<CustomerLayout><PrivacyPolicyPage /></CustomerLayout>} />
 
       {/* Public Customer routes (تصفح مفتوح للجميع بدون تسجيل دخول) */}
       <Route path="/" element={<PublicCustomerRoute><HomePage /></PublicCustomerRoute>} />

@@ -108,13 +108,13 @@ export function RegisterPage() {
   ];
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-pink-950 relative overflow-hidden p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-pink-950 relative overflow-hidden p-4 sm:p-6 lg:p-8 pt-28 sm:pt-24">
 
       {/* خلفية تفاعلية متوهجة */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-32 -start-32 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute -bottom-32 -end-32 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s' }} />
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-teal-400/70 to-transparent" />
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-pink-300/70 to-transparent" />
       </div>
 
       <div className="absolute top-6 start-6 z-20 lg:hidden">
@@ -142,7 +142,7 @@ export function RegisterPage() {
             </svg>
 
             <div className="absolute inset-0 bg-gradient-to-br from-primary-900/85 via-primary-800/80 to-pink-950/90" />
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-teal-400 via-teal-300 to-transparent" />
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-pink-400 via-pink-300 to-transparent" />
 
             <div className="relative text-white space-y-6 p-8 lg:p-10">
               <Logo to="/" size="lg" />
@@ -271,7 +271,7 @@ export function RegisterPage() {
               type="submit"
               size="lg"
               loading={loading}
-              className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-primary-600 to-primary-700 hover:from-teal-500 hover:to-teal-600 text-white shadow-lg shadow-primary-500/25 hover:shadow-teal-500/30 transition-all duration-500 transform hover:scale-[1.02] active:scale-95 cursor-pointer"
+              className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/30 transition-all duration-500 transform hover:scale-[1.02] active:scale-95 cursor-pointer"
             >
               {t('register') || 'إنشاء حساب'}
             </Button>
@@ -279,7 +279,7 @@ export function RegisterPage() {
 
           <p className="text-center text-xs text-gray-500 mt-6">
             {t('alreadyHaveAccount') || 'لديك حساب بالفعل؟'}{' '}
-            <Link to="/login" className="font-bold text-primary-600 hover:text-teal-600 transition-colors hover:underline">
+            <Link to="/login" className="font-bold text-primary-600 hover:text-primary-800 transition-colors hover:underline">
               {t('signInHere') || 'سجل الدخول هنا'}
             </Link>
           </p>
