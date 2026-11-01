@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useCategories, useProducts } from '@/hooks/useData';
@@ -14,7 +13,6 @@ import { ClientBarcodeScannerModal } from '@/components/ClientBarcodeScannerModa
 
 export function ProductsPage() {
   const { t, lang } = useLanguage();
-  const { isAdmin } = useAuth();
   const { addToCart } = useCart();
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -48,6 +46,11 @@ export function ProductsPage() {
       newParams.delete(key);
     }
     setSearchParams(newParams);
+  };
+
+  const submitSearch = (event: FormEvent) => {
+    event.preventDefault();
+    updateParam('search', searchInput.trim());
   };
 
   const clearFilters = () => {
@@ -164,17 +167,23 @@ export function ProductsPage() {
         <div className="flex-1">
           {/* Search + sort bar */}
           <div className="flex flex-col sm:flex-row gap-3 mb-5">
-            <div className="relative flex-1">
+            <form onSubmit={submitSearch} className="relative flex-1">
               <Search className="absolute inset-y-0 start-0 ms-3 my-auto w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') updateParam('search', searchInput); }}
                 placeholder={t('search')}
-                className="w-full ps-9 pe-3 py-2.5 text-sm rounded-xl bg-white border border-gray-200 focus:border-primary-300 focus:ring-2 focus:ring-primary-100 outline-none transition-all"
+                className="w-full ps-9 pe-11 py-2.5 text-sm rounded-xl bg-white border border-gray-200 focus:border-primary-300 focus:ring-2 focus:ring-primary-100 outline-none transition-all"
               />
-            </div>
+              <button
+                type="submit"
+                aria-label={t('search')}
+                className="absolute inset-y-0 end-0 flex items-center justify-center w-10 text-primary-600 hover:text-primary-700"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+            </form>
             <div className="flex gap-2">
               <Select
                 value={sort}

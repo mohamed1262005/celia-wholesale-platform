@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { getCurrentLocation, describeLocationError, isValidPoint, type GeoPoint } from '@/lib/location';
+import { getCurrentLocation, describeLocationError, isValidPoint, mapsUrl, type GeoPoint } from '@/lib/location';
 import {
   findPendingOfflineOrder,
   isNetworkFailure,
@@ -14,7 +14,17 @@ import {
 } from '@/lib/offlineOrders';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
-import { Banknote, ShoppingBag, Package, Smartphone, ShieldCheck, Upload, Image as ImageIcon, X, MapPin, LocateFixed, ExternalLink } from 'lucide-react';
+import { Banknote, Package, Smartphone, ShieldCheck, Upload, X, MapPin, LocateFixed, ExternalLink } from 'lucide-react';
+
+function createIdempotencyKey(): string {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 
 export function CheckoutPage() {
   const { t, lang } = useLanguage();
@@ -74,14 +84,16 @@ export function CheckoutPage() {
     return () => window.removeEventListener('celia:offline-order-synced', handleOrderSynced);
   }, [queuedKey, navigate, clearCart, refreshProfile]);
 
-  if (items.length === 0) {
-    navigate('/cart');
-    return null;
-  }
+  useEffect(() => {
+    if (!user) {
+      navigate('/login?redirect=/checkout', { replace: true });
+    } else if (items.length === 0) {
+      navigate('/cart', { replace: true });
+    }
+  }, [items.length, user, navigate]);
 
-  if (!user) {
-    navigate('/login?redirect=/checkout');
-    return null;
+  if (items.length === 0 || !user) {
+    return <div className="min-h-[40vh] flex items-center justify-center text-gray-500">{t('loading')}</div>;
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,7 +140,7 @@ export function CheckoutPage() {
 
     try {
       const draft: OfflineCheckoutDraft = {
-        idempotencyKey: crypto.randomUUID(),
+        idempotencyKey: createIdempotencyKey(),
         customerId: user.id,
         customerEmail: user.email || null,
         customerName: form.name,
@@ -155,9 +167,11 @@ export function CheckoutPage() {
 
       try {
         const orderId = await submitOfflineCheckoutDraft(draft);
-        await refreshProfile();
         clearCart();
         navigate(`/confirmation/${orderId}`);
+        void refreshProfile().catch((error) => {
+          console.error('Could not refresh the customer profile after placing an order:', error);
+        });
       } catch (error) {
         if (!isNetworkFailure(error)) throw error;
         await saveOfflineOrder(draft);

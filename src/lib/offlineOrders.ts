@@ -148,19 +148,21 @@ export async function submitOfflineCheckoutDraft(draft: OfflineCheckoutDraft): P
     ? String((result as { id: string }).id)
     : '';
   if (!orderId) throw new Error('The server did not return the created order ID');
-  await invalidateCatalog();
+  void invalidateCatalog().catch((error) => {
+    console.error('Could not refresh the catalog after placing an order:', error);
+  });
 
   if (draft.saveAddress) {
-    try {
-      await supabase.from('profiles').update({
-        governorate: draft.governorate.trim(),
-        address: draft.address.trim(),
-        address_lat: draft.location?.lat ?? null,
-        address_lng: draft.location?.lng ?? null,
-      }).eq('id', draft.customerId);
-    } catch {
-      // Address updates are best-effort and must not block an order.
-    }
+    void supabase.from('profiles').update({
+      governorate: draft.governorate.trim(),
+      address: draft.address.trim(),
+      address_lat: draft.location?.lat ?? null,
+      address_lng: draft.location?.lng ?? null,
+    }).eq('id', draft.customerId).then(({ error }) => {
+      if (error) console.warn('Could not save the customer address after placing an order:', error);
+    }).catch((error) => {
+      console.warn('Could not save the customer address after placing an order:', error);
+    });
   }
 
   return orderId;

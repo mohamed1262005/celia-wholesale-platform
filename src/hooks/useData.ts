@@ -83,7 +83,7 @@ export function useProducts(filters?: {
 
   // تنظيف كلمة البحث من الرموز اللي بتبوّظ صيغة الفلتر
   const term = (filters?.search || '')
-    .replace(/[%,()\\*]/g, ' ')
+    .replace(/[%,()\\*"]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 

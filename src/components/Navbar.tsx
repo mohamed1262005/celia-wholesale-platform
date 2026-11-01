@@ -151,8 +151,11 @@ export function Navbar() {
                 value={searchValue}
                 onChange={e => setSearchValue(e.target.value)}
                 placeholder={t('search')}
-                className="w-full ps-9 pe-3 py-1.5 text-xs sm:text-sm rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-primary-300 focus:ring-2 focus:ring-primary-100 transition-all outline-none"
+                className="w-full ps-9 pe-10 py-1.5 text-xs sm:text-sm rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-primary-300 focus:ring-2 focus:ring-primary-100 transition-all outline-none"
               />
+              <button type="submit" aria-label={t('search')} className="absolute inset-y-0 end-0 flex items-center justify-center w-9 text-primary-600 hover:text-primary-700">
+                <Search className="w-4 h-4" />
+              </button>
             </div>
           </form>
 
@@ -330,8 +333,11 @@ export function Navbar() {
                   value={searchValue}
                   onChange={e => setSearchValue(e.target.value)}
                   placeholder={t('search')}
-                  className="w-full ps-9 pe-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-primary-300 focus:ring-2 focus:ring-primary-100 transition-all outline-none"
+                  className="w-full ps-9 pe-10 py-2 text-xs rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-primary-300 focus:ring-2 focus:ring-primary-100 transition-all outline-none"
                 />
+                <button type="submit" aria-label={t('search')} className="absolute inset-y-0 end-0 flex items-center justify-center w-9 text-primary-600 hover:text-primary-700">
+                  <Search className="w-4 h-4" />
+                </button>
               </div>
             </form>
           </div>
