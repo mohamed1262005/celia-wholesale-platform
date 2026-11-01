@@ -13,6 +13,10 @@ export interface Profile {
   email: string;
   role: UserRole;
   status: UserStatus;
+  governorate?: string | null;
+  address?: string | null;
+  address_lat?: number | null;
+  address_lng?: number | null;
   created_at: string;
 }
 

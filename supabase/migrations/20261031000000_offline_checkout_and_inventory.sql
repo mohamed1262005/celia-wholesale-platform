@@ -7,15 +7,27 @@ ALTER TABLE public.products
 ALTER TABLE public.orders
   ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   ADD COLUMN IF NOT EXISTS phone text,
+  ADD COLUMN IF NOT EXISTS customer_email text,
+  ADD COLUMN IF NOT EXISTS subtotal numeric(10,2) NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS total_amount numeric(10,2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS total_quantity int NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS shipping_address text,
   ADD COLUMN IF NOT EXISTS delivery_lat double precision,
   ADD COLUMN IF NOT EXISTS delivery_lng double precision,
+  ADD COLUMN IF NOT EXISTS delivery_notes text,
+  ADD COLUMN IF NOT EXISTS order_notes text,
   ADD COLUMN IF NOT EXISTS idempotency_key uuid;
 
 UPDATE public.orders SET total_amount = subtotal WHERE total_amount = 0 AND subtotal > 0;
-UPDATE public.orders SET user_id = customer_id WHERE user_id IS NULL;
+UPDATE public.orders SET subtotal = total_amount WHERE subtotal = 0 AND total_amount > 0;
+UPDATE public.orders
+  SET user_id = customer_id::uuid
+  WHERE user_id IS NULL
+    AND customer_id::text ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 UPDATE public.orders SET phone = customer_phone WHERE phone IS NULL;
+
+ALTER TABLE public.order_items
+  ADD COLUMN IF NOT EXISTS packaging text;
 
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS governorate text,
@@ -34,11 +46,27 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_idempotency_key
 
 DROP POLICY IF EXISTS "insert_own_orders" ON public.orders;
 DROP POLICY IF EXISTS "insert_order_items" ON public.order_items;
+DROP POLICY IF EXISTS "select_own_orders" ON public.orders;
 DROP POLICY IF EXISTS "update_own_orders" ON public.orders;
+CREATE POLICY "select_own_orders" ON public.orders FOR SELECT
+  TO authenticated USING (
+    customer_id::text = auth.uid()::text
+    OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  );
 CREATE POLICY "update_own_orders" ON public.orders FOR UPDATE
   TO authenticated
-  USING (auth.uid() = customer_id AND status = 'new')
-  WITH CHECK (auth.uid() = customer_id AND status IN ('new', 'cancelled'));
+  USING (customer_id::text = auth.uid()::text AND status = 'new')
+  WITH CHECK (customer_id::text = auth.uid()::text AND status IN ('new', 'cancelled'));
+
+DROP POLICY IF EXISTS "select_order_items" ON public.order_items;
+CREATE POLICY "select_order_items" ON public.order_items FOR SELECT
+  TO authenticated USING (
+    EXISTS (
+      SELECT 1 FROM public.orders o
+      WHERE o.id = order_id AND o.customer_id::text = auth.uid()::text
+    )
+    OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  );
 
 CREATE OR REPLACE FUNCTION public.generate_order_number()
 RETURNS text
@@ -116,7 +144,7 @@ BEGIN
     FROM public.orders
     WHERE idempotency_key = p_idempotency_key;
   IF FOUND THEN
-    IF existing_order.customer_id <> authenticated_user_id THEN
+    IF existing_order.customer_id::text <> authenticated_user_id::text THEN
       RAISE EXCEPTION 'Idempotency key belongs to another customer' USING ERRCODE = '42501';
     END IF;
     RETURN jsonb_build_object('id', existing_order.id, 'order_number', existing_order.order_number);
@@ -207,7 +235,7 @@ BEGIN
       status, city, address, shipping_address, delivery_lat, delivery_lng,
       delivery_notes, order_notes, idempotency_key
     ) VALUES (
-      order_number, authenticated_user_id, authenticated_user_id,
+      order_number, authenticated_user_id::text, authenticated_user_id,
       p_customer_name, p_customer_phone, p_customer_phone,
       p_customer_email, order_subtotal, order_subtotal, total_quantity,
       p_payment_method, 'new', p_city, p_address, p_shipping_address,
@@ -247,7 +275,7 @@ BEGIN
     SELECT * INTO existing_order
       FROM public.orders
       WHERE idempotency_key = p_idempotency_key;
-    IF FOUND AND existing_order.customer_id = authenticated_user_id THEN
+    IF FOUND AND existing_order.customer_id::text = authenticated_user_id::text THEN
       RETURN jsonb_build_object('id', existing_order.id, 'order_number', existing_order.order_number);
     END IF;
     RAISE;
@@ -322,3 +350,5 @@ DROP TRIGGER IF EXISTS order_inventory_delete ON public.orders;
 CREATE TRIGGER order_inventory_delete
   BEFORE DELETE ON public.orders
   FOR EACH ROW EXECUTE FUNCTION public.release_order_inventory_on_delete();
+
+NOTIFY pgrst, 'reload schema';

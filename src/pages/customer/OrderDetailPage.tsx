@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { formatDate } from '@/lib/pricing';
 import type { Order, OrderStatus } from '@/types';
-import { ArrowLeft, Package, MapPin, User, Phone, Mail, XCircle, Sparkles, Clock, CheckCircle, Truck } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, User, Phone, Mail, XCircle, Sparkles, Clock, CheckCircle, Truck, Printer, Store, ReceiptText } from 'lucide-react';
 
 export function OrderDetailPage() {
   const { id } = useParams();
@@ -74,6 +74,11 @@ export function OrderDetailPage() {
   }
 
   const canCancel = order.status === 'new' && order.customer_id === user?.id;
+  const orderDetails = order as Order & {
+    total_amount?: number;
+    phone?: string;
+    shipping_address?: string;
+  };
 
   const handleCancel = async () => {
     const { error } = await supabase
@@ -99,28 +104,46 @@ export function OrderDetailPage() {
     Truck
   ];
 
-  const calculatedSubtotal = order.order_items?.reduce((sum, item: any) => {
+  const calculatedSubtotal = order.order_items?.reduce((sum, item) => {
     const itemTotal = Number(item.total ?? (Number(item.unit_price || 0) * Number(item.quantity || 1))) || 0;
     return sum + itemTotal;
   }, 0) || Number(order.subtotal || 0);
+  const invoiceTotal = Number(orderDetails.total_amount ?? calculatedSubtotal);
+  const totalItems = order.order_items?.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
+    ?? Number(order.total_quantity || 0);
+  const invoiceDate = new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG' : 'en', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(order.created_at));
+  const paymentMethodLabel = order.payment_method === 'cod'
+    ? lang === 'ar' ? 'الدفع عند الاستلام' : 'Cash on delivery'
+    : order.payment_method === 'online'
+      ? lang === 'ar' ? 'دفع إلكتروني' : 'Online payment'
+      : order.payment_method;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-      <Link to="/orders" className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-primary-600 mb-4">
+      <Link to="/orders" className="no-print inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-primary-600 mb-4">
         <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
         {t('myOrders')}
       </Link>
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="no-print flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-extrabold text-gray-900">{order.order_number}</h1>
           <p className="text-sm text-gray-500 mt-1">{formatDate(order.created_at, lang)}</p>
         </div>
-        <StatusBadge status={order.status} />
+        <div className="flex items-center gap-3">
+          <StatusBadge status={order.status} />
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="w-4 h-4" />
+            {lang === 'ar' ? 'طباعة / حفظ PDF' : 'Print / Save PDF'}
+          </Button>
+        </div>
       </div>
 
       {order.status !== 'cancelled' && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5 mb-6">
+        <div className="no-print bg-white rounded-2xl border border-gray-100 shadow-card p-5 mb-6">
           <h3 className="font-bold text-sm text-gray-900 mb-4">{t('orderTimeline')}</h3>
           <div className="flex items-center justify-between relative">
             {statusTimeline.map((status, idx) => {
@@ -147,97 +170,116 @@ export function OrderDetailPage() {
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="md:col-span-2">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden">
-            <div className="px-5 py-3 border-b border-gray-100">
-              <h3 className="font-bold text-sm text-gray-900">{t('items2')}</h3>
+      <section className="invoice-print rounded-2xl bg-white border border-gray-100 shadow-card overflow-hidden">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-7 border-b-2 border-primary-100 bg-gradient-to-l from-primary-50 to-white">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-primary-500 text-white flex items-center justify-center">
+              <Store className="w-6 h-6" />
             </div>
-            <div className="divide-y divide-gray-50">
-              {order.order_items?.map(item => {
-                const unitPrice = Number(item.unit_price || 0);
-                const quantity = Number(item.quantity || 1);
-                const itemTotal = Number(item.total ?? (unitPrice * quantity)) || 0;
-                return (
-                  <div key={item.id} className="flex items-center gap-4 p-4">
-                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-gradient-to-br from-primary-50 to-pink-100 flex-shrink-0">
-                      {item.product_image ? (
-                        <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-6 h-6 text-primary-200" />
+            <div>
+              <p className="text-lg font-extrabold text-gray-900">Celia</p>
+              <p className="text-xs font-semibold tracking-wide text-primary-600">PREMIUM SWEETS</p>
+              <p className="mt-1 text-[11px] text-gray-500" dir="ltr">01000359525 · mangomado011@gmail.com</p>
+            </div>
+          </div>
+          <div className="sm:text-end">
+            <h2 className="flex items-center gap-2 text-xl font-extrabold text-gray-900 sm:justify-end">
+              <ReceiptText className="w-5 h-5 text-primary-600" />
+              {lang === 'ar' ? 'فاتورة طلب' : 'Order invoice'}
+            </h2>
+            <p className="mt-1 font-mono text-sm font-bold text-primary-700" dir="ltr">{order.order_number}</p>
+            <p className="text-xs text-gray-500">{invoiceDate}</p>
+          </div>
+        </header>
+
+        <div className="grid sm:grid-cols-3 gap-3 p-5 sm:px-7 border-b border-gray-100 bg-white">
+          <div className="rounded-xl bg-gray-50 p-3">
+            <p className="mb-1 text-[11px] font-bold text-gray-400">{lang === 'ar' ? 'العميل' : 'Customer'}</p>
+            <p className="text-sm font-bold text-gray-900">{order.customer_name}</p>
+            <p className="text-xs text-gray-600" dir="ltr">{order.customer_phone || orderDetails.phone}</p>
+            {order.customer_email && <p className="text-xs text-gray-500 break-all">{order.customer_email}</p>}
+          </div>
+          <div className="rounded-xl bg-gray-50 p-3">
+            <p className="mb-1 text-[11px] font-bold text-gray-400">{lang === 'ar' ? 'عنوان التوصيل' : 'Delivery address'}</p>
+            <p className="text-sm font-semibold text-gray-800">{[order.city, order.area].filter(Boolean).join(' - ') || '—'}</p>
+            <p className="text-xs text-gray-600">{order.address || orderDetails.shipping_address || '—'}</p>
+            {order.delivery_notes && <p className="mt-1 text-xs text-gray-500">{order.delivery_notes}</p>}
+          </div>
+          <div className="rounded-xl bg-gray-50 p-3">
+            <p className="mb-1 text-[11px] font-bold text-gray-400">{lang === 'ar' ? 'الدفع وحالة الطلب' : 'Payment & order status'}</p>
+            <p className="text-sm font-semibold text-gray-800">{paymentMethodLabel}</p>
+            <div className="mt-1 flex items-center gap-2 text-xs text-gray-600">
+              <span>{lang === 'ar' ? 'الحالة:' : 'Status:'}</span>
+              <StatusBadge status={order.status} />
+            </div>
+            {order.order_notes && <p className="mt-1 text-xs text-gray-500">{lang === 'ar' ? 'مرجع الدفع:' : 'Payment reference:'} {order.order_notes}</p>}
+          </div>
+        </div>
+
+        <div className="p-5 sm:px-7">
+          <h3 className="mb-3 text-sm font-extrabold text-gray-900">{lang === 'ar' ? 'تفاصيل المنتجات' : 'Items'}</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[480px] text-sm">
+              <thead>
+                <tr className="border-y border-gray-200 bg-gray-50 text-xs text-gray-500">
+                  <th className="px-3 py-2 text-start font-bold">{lang === 'ar' ? 'المنتج' : 'Product'}</th>
+                  <th className="px-3 py-2 text-center font-bold">{lang === 'ar' ? 'الكمية' : 'Qty'}</th>
+                  <th className="px-3 py-2 text-end font-bold">{lang === 'ar' ? 'سعر الوحدة' : 'Unit price'}</th>
+                  <th className="px-3 py-2 text-end font-bold">{lang === 'ar' ? 'الإجمالي' : 'Total'}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {order.order_items?.map((item) => {
+                  const unitPrice = Number(item.unit_price || 0);
+                  const quantity = Number(item.quantity || 0);
+                  const itemTotal = Number(item.total ?? unitPrice * quantity);
+                  return (
+                    <tr key={item.id}>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-3">
+                          {item.product_image && <img src={item.product_image} alt="" className="h-10 w-10 rounded-lg object-cover print-invoice-image" />}
+                          <div>
+                            <p className="font-semibold text-gray-900">{item.product_name}</p>
+                            {item.packaging && <p className="text-xs text-gray-500">{item.packaging}</p>}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900">{item.product_name}</p>
-                      {item.packaging && <p className="text-xs text-gray-400">{item.packaging}</p>}
-                      <p className="text-xs text-gray-500 mt-1">
-                        {quantity} × {unitPrice.toFixed(2)} {t('currency')}
-                      </p>
-                    </div>
-                    <p className="text-sm font-bold text-gray-900 whitespace-nowrap">
-                      {itemTotal.toFixed(2)} {t('currency')}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="px-5 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-              <span className="font-bold text-gray-900">{t('total')}</span>
-              <span className="text-xl font-extrabold text-primary-600">{calculatedSubtotal.toFixed(2)} {t('currency')}</span>
-            </div>
+                      </td>
+                      <td className="px-3 py-3 text-center">{quantity}</td>
+                      <td className="px-3 py-3 text-end whitespace-nowrap">{unitPrice.toFixed(2)} {t('currency')}</td>
+                      <td className="px-3 py-3 text-end font-bold whitespace-nowrap">{itemTotal.toFixed(2)} {t('currency')}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5">
-          <h3 className="font-bold text-sm text-gray-900 mb-3">{t('customerInfo')}</h3>
-          <div className="space-y-2.5 text-sm">
-            <div className="flex items-center gap-2 text-gray-600">
-              <User className="w-4 h-4 text-gray-400" />
-              <span>{order.customer_name}</span>
-            </div>
-            <div className="flex items-center gap-2 text-gray-600">
-              <Phone className="w-4 h-4 text-gray-400" />
-              <span>{order.customer_phone}</span>
-            </div>
-            {order.customer_email && (
-              <div className="flex items-center gap-2 text-gray-600">
-                <Mail className="w-4 h-4 text-gray-400" />
-                <span>{order.customer_email}</span>
+          <div className="mt-5 flex justify-end">
+            <div className="w-full max-w-xs space-y-2">
+              <div className="flex justify-between gap-5 text-sm text-gray-600">
+                <span>{lang === 'ar' ? 'عدد القطع' : 'Total items'}</span>
+                <span>{totalItems}</span>
               </div>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5">
-          <h3 className="font-bold text-sm text-gray-900 mb-3">{t('deliveryInfo')}</h3>
-          <div className="space-y-2 text-sm text-gray-600">
-            <div className="flex items-start gap-2">
-              <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <p>{order.city}, {order.area}</p>
-                <p className="text-gray-500">{order.address}</p>
+              <div className="flex justify-between gap-5 border-t-2 border-primary-200 pt-3 text-base font-extrabold text-gray-900">
+                <span>{lang === 'ar' ? 'الإجمالي المستحق' : 'Amount due'}</span>
+                <span className="text-primary-700">{invoiceTotal.toFixed(2)} {t('currency')}</span>
               </div>
             </div>
-            {order.delivery_notes && (
-              <p className="text-xs text-gray-500 pt-2 border-t border-gray-50">{order.delivery_notes}</p>
-            )}
-            {order.order_notes && (
-              <p className="text-xs text-gray-500 pt-2 border-t border-gray-50">{order.order_notes}</p>
-            )}
           </div>
         </div>
-      </div>
+        <footer className="border-t border-gray-100 bg-primary-50/60 px-5 py-3 text-center text-xs text-gray-600 sm:px-7">
+          {lang === 'ar' ? 'شكرًا لثقتكم في Celia Premium Sweets' : 'Thank you for choosing Celia Premium Sweets'}
+        </footer>
+      </section>
 
-      {canCancel && (
-        <div className="mt-6">
+      <div className="no-print mt-6">
+        {canCancel && (
           <Button variant="danger" onClick={() => setCancelModal(true)}>
             <XCircle className="w-4 h-4" />
             {t('cancelOrder')}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       <Modal open={cancelModal} onClose={() => setCancelModal(false)} title={t('cancelOrder')} size="sm">
         <p className="text-sm text-gray-600 mb-5">

@@ -7,6 +7,10 @@ import { supabase } from '@/lib/supabase';
 import { Bell, CheckCircle, AlertTriangle, Sparkles, Menu, Trash2, Eye } from 'lucide-react';
 import { PageBackButton } from '@/components/ui/PageBackButton';
 
+function getOrderNumberFromNotification(message: string | null | undefined): string | null {
+  return message?.match(/\bCEL-\d+(?:-\d+)?\b/i)?.[0] ?? null;
+}
+
 export function AdminLayout() {
   const { lang } = useLanguage();
   const navigate = useNavigate();
@@ -63,9 +67,8 @@ export function AdminLayout() {
   };
 
   const fetchSingleOrderFromNotification = async (message: string) => {
-    const match = message?.match(/CEL-\d+/i);
-    if (!match) return;
-    const orderNum = match[0];
+    const orderNum = getOrderNumberFromNotification(message);
+    if (!orderNum) return;
     
     if (ordersMap[orderNum]) return;
 
@@ -107,8 +110,7 @@ export function AdminLayout() {
   };
 
   const getNotificationDisplay = (notif: any) => {
-    const match = notif.message?.match(/CEL-\d+/i);
-    const orderNumber = match ? match[0] : null;
+    const orderNumber = getOrderNumberFromNotification(notif.message);
     const orderData = orderNumber ? ordersMap[orderNumber] : null;
 
     if (orderData) {
@@ -257,7 +259,7 @@ export function AdminLayout() {
                                       className="px-2.5 py-1 bg-primary-500 hover:bg-primary-600 text-white text-[10px] font-bold rounded-md transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
                                     >
                                       <Eye className="w-3 h-3" />
-                                      <span>{lang === 'ar' ? 'التفاصيل' : 'Details'}</span>
+                                      <span>{lang === 'ar' ? 'تفاصيل الطلب' : 'Order details'}</span>
                                     </button>
                                   )}
                                 </div>

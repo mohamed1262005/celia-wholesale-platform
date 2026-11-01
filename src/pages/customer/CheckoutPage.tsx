@@ -26,6 +26,15 @@ function createIdempotencyKey(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+function getCheckoutErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = error.message;
+    if (typeof message === 'string' && message.trim()) return message;
+  }
+  return fallback;
+}
+
 export function CheckoutPage() {
   const { t, lang } = useLanguage();
   const { items, subtotal, totalItems, clearCart } = useCart();
@@ -43,21 +52,21 @@ export function CheckoutPage() {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
 
   // العنوان المحفوظ من الطلبات السابقة (لو موجود) — بيتملّى تلقائيًا
-  const saved = (profile as any) || {};
+  const saved = profile;
 
   const [form, setForm] = useState({
     name: profile?.full_name || '',
     phone: profile?.phone || '',
-    governorate: saved.governorate || '',
-    address: saved.address || '',
+    governorate: saved?.governorate || '',
+    address: saved?.address || '',
     deliveryNotes: '',
     transactionRef: '',
   });
 
   // الموقع الجغرافي (اختياري) + حفظ العنوان للطلبات القادمة
   const [geo, setGeo] = useState<GeoPoint | null>(
-    isValidPoint(saved.address_lat, saved.address_lng)
-      ? { lat: Number(saved.address_lat), lng: Number(saved.address_lng) }
+    isValidPoint(saved?.address_lat, saved?.address_lng)
+      ? { lat: Number(saved?.address_lat), lng: Number(saved?.address_lng) }
       : null
   );
   const [locating, setLocating] = useState(false);
@@ -69,6 +78,11 @@ export function CheckoutPage() {
       .then((draft) => setQueuedKey(draft?.idempotencyKey ?? null))
       .catch(() => undefined);
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!receiptPreview) return;
+    return () => URL.revokeObjectURL(receiptPreview);
+  }, [receiptPreview]);
 
   useEffect(() => {
     const handleOrderSynced = (event: Event) => {
@@ -98,11 +112,26 @@ export function CheckoutPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setReceiptFile(file);
-      setReceiptPreview(URL.createObjectURL(file));
-      setErrors((previous) => ({ ...previous, receipt: '' }));
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const error = !allowedTypes.includes(file.type)
+      ? (ar ? 'صيغة الصورة غير مدعومة. استخدم PNG أو JPG أو WebP.' : 'Unsupported image format. Use PNG, JPG, or WebP.')
+      : file.size > 5 * 1024 * 1024
+        ? (ar ? 'حجم صورة الإيصال يجب ألا يتجاوز 5 ميجابايت.' : 'Receipt image must be 5 MB or smaller.')
+        : '';
+
+    if (error) {
+      setReceiptFile(null);
+      setReceiptPreview(null);
+      setErrors((previous) => ({ ...previous, receipt: error }));
+      e.target.value = '';
+      return;
     }
+
+    setReceiptFile(file);
+    setReceiptPreview(URL.createObjectURL(file));
+    setErrors((previous) => ({ ...previous, receipt: '' }));
   };
 
   const handleLocate = async () => {
@@ -178,8 +207,8 @@ export function CheckoutPage() {
         setQueuedKey(draft.idempotencyKey);
         showToast(ar ? 'تعذر الاتصال؛ تم حفظ الطلب للمزامنة لاحقًا' : 'Connection lost; order saved for later sync', 'info');
       }
-    } catch (err: any) {
-      showToast(err?.message || t('error'), 'error');
+    } catch (err: unknown) {
+      showToast(getCheckoutErrorMessage(err, t('error')), 'error');
       console.error(err);
     } finally {
       setSubmitting(false);
@@ -397,7 +426,7 @@ export function CheckoutPage() {
                       <p className="text-[10px] text-gray-400 mt-1">PNG, JPG, JPEG (Max 5MB)</p>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp"
                         onChange={handleFileChange}
                         className="hidden"
                       />
@@ -411,7 +440,11 @@ export function CheckoutPage() {
                       />
                       <button
                         type="button"
-                        onClick={() => { setReceiptFile(null); setReceiptPreview(null); }}
+                        onClick={() => {
+                          setReceiptFile(null);
+                          setReceiptPreview(null);
+                          setErrors((previous) => ({ ...previous, receipt: '' }));
+                        }}
                         className="absolute top-3 end-3 w-7 h-7 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md hover:bg-red-700 transition-colors"
                         title="حذف الصورة"
                       >

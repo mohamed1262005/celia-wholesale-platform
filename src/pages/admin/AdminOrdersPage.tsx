@@ -31,10 +31,46 @@ export function AdminOrdersPage() {
 
   // حالة صورة المنتج المكبّرة (Lightbox)
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [signedReceiptUrl, setSignedReceiptUrl] = useState<string | null>(null);
+
+  const receiptPath = selectedOrder?.shipping_address
+    ?.match(/رابط الإيصال:\s*storage:\/\/orders\/([^\s\]]+)/)?.[1] ?? null;
 
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  useEffect(() => {
+    if (!receiptPath) {
+      setSignedReceiptUrl(null);
+      return;
+    }
+
+    let active = true;
+    setSignedReceiptUrl(null);
+    void supabase.storage
+      .from('orders')
+      .createSignedUrl(receiptPath, 60 * 60)
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
+          console.error('Could not load the private order receipt:', error);
+          showToast(error.message, 'error');
+          return;
+        }
+        setSignedReceiptUrl(data.signedUrl);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('Could not load the private order receipt:', message);
+        showToast(message, 'error');
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [receiptPath, showToast]);
 
   // فتح الطلب تلقائياً لو جاي من إشعار برابط فيه ?order=CEL-XXXXX
   useEffect(() => {
@@ -139,6 +175,9 @@ export function AdminOrdersPage() {
   };
 
   const selectedMapUrl = selectedOrder ? getOrderMapUrl(selectedOrder) : null;
+  const legacyPaymentReceiptUrl = selectedOrder?.shipping_address
+    ?.match(/رابط الإيصال:\s*(https?:\/\/[^\s\]]+)/)?.[1] ?? null;
+  const paymentReceiptUrl = legacyPaymentReceiptUrl ?? signedReceiptUrl;
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-8 pb-28 space-y-6">
@@ -550,6 +589,28 @@ export function AdminOrdersPage() {
                       : 'Cash on Delivery'
                     : selectedOrder.payment_method}
                 </p>
+                {selectedOrder.order_notes && (
+                  <p className="text-xs text-gray-500">
+                    {lang === 'ar' ? 'مرجع الدفع:' : 'Payment reference:'} {selectedOrder.order_notes}
+                  </p>
+                )}
+                {paymentReceiptUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setZoomedImage(paymentReceiptUrl)}
+                    className="mt-2 block text-right cursor-zoom-in"
+                    title={lang === 'ar' ? 'اضغط لفتح إيصال الدفع' : 'Click to view payment receipt'}
+                  >
+                    <span className="mb-1 block text-xs font-semibold text-primary-600">
+                      {lang === 'ar' ? 'إيصال الدفع (اضغط للتكبير)' : 'Payment receipt (click to enlarge)'}
+                    </span>
+                    <img
+                      src={paymentReceiptUrl}
+                      alt={lang === 'ar' ? 'إيصال الدفع' : 'Payment receipt'}
+                      className="h-20 w-20 rounded-xl border border-gray-200 object-cover hover:ring-2 hover:ring-primary-400"
+                    />
+                  </button>
+                )}
               </div>
               <div className="text-left">
                 <p className="text-xs text-gray-400">

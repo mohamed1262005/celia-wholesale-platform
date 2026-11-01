@@ -109,8 +109,15 @@ export async function submitOfflineCheckoutDraft(draft: OfflineCheckoutDraft): P
         contentType: draft.receipt.type || 'application/octet-stream',
         upsert: true,
       });
-    if (uploadError) throw uploadError;
-    receiptUrl = supabase.storage.from('orders').getPublicUrl(filePath).data.publicUrl;
+    if (uploadError) {
+      if (uploadError.message.toLowerCase().includes('bucket not found')) {
+        throw new Error(draft.language === 'ar'
+          ? 'رفع إيصال الدفع غير مفعّل في قاعدة البيانات. يجب تطبيق ملف supabase/migrations/20261101205000_private_order_receipts.sql على مشروع Supabase ثم إعادة المحاولة.'
+          : 'Receipt uploads are not enabled in the database. Apply supabase/migrations/20261101205000_private_order_receipts.sql to the Supabase project, then try again.');
+      }
+      throw uploadError;
+    }
+    receiptUrl = `storage://orders/${filePath}`;
   }
 
   const addressText = draft.address.trim() || (draft.language === 'ar' ? 'حسب الموقع المحدد على الخريطة' : 'As pinned on the map');
@@ -141,15 +148,13 @@ export async function submitOfflineCheckoutDraft(draft: OfflineCheckoutDraft): P
       quantity: line.quantity,
     })),
   });
-  if (error) {
-    if (error.code === 'PGRST202' || error.message.toLowerCase().includes('could not find the function')) {
-      console.error('The place_order RPC is missing from the Supabase schema cache:', error);
-      throw new Error(draft.language === 'ar'
-        ? 'خدمة إتمام الطلب غير مفعّلة على قاعدة البيانات. يجب على المسؤول تطبيق ملف supabase/migrations/20261031000000_offline_checkout_and_inventory.sql على مشروع Supabase ثم إعادة المحاولة.'
-        : 'Checkout is not enabled in the database yet. Ask the administrator to apply supabase/migrations/20261031000000_offline_checkout_and_inventory.sql to the Supabase project, then try again.');
-    }
-    throw error;
+  if (error?.code === 'PGRST202' || error?.message.toLowerCase().includes('could not find the function')) {
+    console.error('The place_order RPC is missing from the Supabase schema:', error);
+    throw new Error(draft.language === 'ar'
+      ? 'إتمام الطلب غير مفعّل في قاعدة البيانات. يجب تطبيق ملف supabase/migrations/20261031000000_offline_checkout_and_inventory.sql على مشروع Supabase ثم إعادة المحاولة.'
+      : 'Checkout is not enabled in the database. Apply supabase/migrations/20261031000000_offline_checkout_and_inventory.sql to the Supabase project, then try again.');
   }
+  if (error) throw error;
 
   const result = Array.isArray(data) ? data[0] : data;
   const orderId = result && typeof result === 'object' && 'id' in result

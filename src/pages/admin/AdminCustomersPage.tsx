@@ -1,23 +1,61 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { Users, Search, ShieldCheck, ShoppingBag, DollarSign, Calendar, Sparkles, Star, ArrowRight } from 'lucide-react';
 
+interface CustomerRecord {
+  id: string;
+  role?: string | null;
+  email?: string | null;
+  full_name?: string | null;
+  name?: string | null;
+  phone?: string | null;
+  created_at?: string | null;
+}
+
+interface CustomerOrder {
+  id: string;
+  user_id?: string | null;
+  customer_id?: string | null;
+  profile_id?: string | null;
+  customer_phone?: string | null;
+  phone?: string | null;
+  total_amount?: number | string | null;
+  subtotal?: number | string | null;
+  total?: number | string | null;
+  created_at: string;
+}
+
+interface CustomerOrderItem {
+  order_id: string;
+  product_name?: string | null;
+  name?: string | null;
+  title?: string | null;
+}
+
+interface CustomerSummary extends CustomerRecord {
+  ordersCount: number;
+  totalSpent: number;
+  orderedProducts: string[];
+  lastOrderDate: string | null;
+  isVip: boolean;
+}
+
+function normalizePhone(phone: string | null | undefined): string {
+  return String(phone || '').replace(/\D/g, '');
+}
+
 export function AdminCustomersPage() {
   const { t, lang } = useLanguage();
   const { showToast } = useToast();
 
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<CustomerSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterVipOnly, setFilterVipOnly] = useState(false);
 
-  useEffect(() => {
-    fetchCustomersAndOrders();
-  }, []);
-
-  const fetchCustomersAndOrders = async () => {
+  const fetchCustomersAndOrders = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -33,10 +71,10 @@ export function AdminCustomersPage() {
         return;
       }
 
-      const rawCustomers = profilesData || [];
+      const rawCustomers = (profilesData || []) as CustomerRecord[];
 
       // إزالة التكرار بناءً على الـ id أو الـ email
-      const uniqueCustomersMap = new Map();
+      const uniqueCustomersMap = new Map<string, CustomerRecord>();
       rawCustomers.forEach(c => {
         const identifier = c.id || c.email;
         if (identifier && !uniqueCustomersMap.has(identifier)) {
@@ -50,32 +88,58 @@ export function AdminCustomersPage() {
       const filteredProfiles = Array.from(uniqueCustomersMap.values());
 
       // 2. جلب الطلبات من جدول orders
-      const { data: ordersData } = await supabase
+      const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      const orders = ordersData || [];
+      if (ordersError) {
+        throw new Error(ordersError.message);
+      }
+
+      const orders = (ordersData || []) as CustomerOrder[];
 
       // 3. جلب عناصر الطلبات من جدول order_items
-      const { data: orderItemsData } = await supabase
+      const { data: orderItemsData, error: orderItemsError } = await supabase
         .from('order_items')
         .select('*');
 
-      const orderItems = orderItemsData || [];
+      if (orderItemsError) {
+        showToast(orderItemsError.message, 'error');
+      }
+
+      const orderItems = (orderItemsData || []) as CustomerOrderItem[];
 
       // 4. دمج البيانات وحساب الإحصائيات لكل عميل
+      const customerPhoneCounts = new Map<string, number>();
+      filteredProfiles.forEach(customer => {
+        const phone = normalizePhone(customer.phone);
+        if (phone) customerPhoneCounts.set(phone, (customerPhoneCounts.get(phone) || 0) + 1);
+      });
+
       const mappedCustomers = filteredProfiles.map(customer => {
-        const customerOrders = orders.filter(o => 
-          o.user_id === customer.id || o.customer_id === customer.id || o.profile_id === customer.id
+        const customerId = String(customer.id).trim().toLowerCase();
+        const customerPhone = normalizePhone(customer.phone);
+        const customerOrders = orders.filter(o =>
+          [o.user_id, o.customer_id, o.profile_id].some(id =>
+            id != null && String(id).trim().toLowerCase() === customerId
+          ) || (
+            customerPhone.length > 0 &&
+            customerPhoneCounts.get(customerPhone) === 1 &&
+            normalizePhone(o.customer_phone || o.phone) === customerPhone
+          )
         );
 
-        const totalSpent = customerOrders.reduce((sum, o) => sum + (Number(o.total_amount || o.total || 0) || 0), 0);
+        const totalSpent = customerOrders.reduce((sum, o) => {
+          const amount = Number(o.total_amount) || Number(o.subtotal) || Number(o.total) || 0;
+          return sum + amount;
+        }, 0);
         const ordersCount = customerOrders.length;
 
         const orderedProducts: string[] = [];
         customerOrders.forEach(order => {
           const itemsForThisOrder = orderItems.filter(item => item.order_id === order.id);
-          itemsForThisOrder.forEach((item: any) => {
+          itemsForThisOrder.forEach(item => {
             const productName = item.product_name || item.name || item.title;
             if (productName && !orderedProducts.includes(productName)) {
               orderedProducts.push(productName);
@@ -88,25 +152,27 @@ export function AdminCustomersPage() {
           ordersCount,
           totalSpent,
           orderedProducts,
-          lastOrderDate: customerOrders.length > 0 ? customerOrders[0].created_at : null
+          lastOrderDate: customerOrders.length > 0 ? customerOrders[0].created_at : null,
+          isVip: ordersCount > 0 || totalSpent > 0,
         };
-      });
-
-      // تحديد العملاء المميزين
-      mappedCustomers.forEach(c => {
-        c.isVip = c.ordersCount > 0 || c.totalSpent > 0;
       });
 
       // ترتيب العملاء تنازلياً حسب المشتريات والطلبات
       mappedCustomers.sort((a, b) => b.totalSpent - a.totalSpent || b.ordersCount - a.ordersCount);
 
       setCustomers(mappedCustomers);
-    } catch (err: any) {
-      console.error('Error fetching customers:', err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('Error fetching customers:', message);
+      showToast(message || 'تعذر تحميل بيانات العملاء والطلبات', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
+
+  useEffect(() => {
+    void fetchCustomersAndOrders();
+  }, [fetchCustomersAndOrders]);
 
   const filteredCustomers = customers.filter((customer) => {
     const name = (customer.full_name || customer.name || '').toLowerCase();
@@ -123,10 +189,10 @@ export function AdminCustomersPage() {
   const vipCount = customers.filter(c => c.isVip).length;
 
   return (
-    <div className="w-full px-4 md:px-8 py-8 pb-32 space-y-6 bg-gradient-to-br from-pink-50/40 via-purple-50/20 to-slate-50 min-h-screen" dir="rtl">
+    <div className="w-full px-4 md:px-8 py-8 pb-32 space-y-6 bg-gradient-to-br from-amber-50/30 via-pink-50/30 to-slate-50 min-h-screen" dir="rtl">
       
       {/* 1. Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-pink-100/70 via-purple-100/40 to-white rounded-3xl border border-pink-200/60 shadow-sm p-8 transition-all duration-300">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-pink-100/70 via-amber-50/70 to-white rounded-3xl border border-amber-200/50 shadow-sm p-8 transition-all duration-300">
         <div>
           <h1 className="text-3xl font-extrabold text-gray-900 flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-primary-500/15 text-primary-600 flex items-center justify-center border border-primary-500/20 shadow-xs">
@@ -191,7 +257,7 @@ export function AdminCustomersPage() {
       </div>
 
       {/* 3. Search Bar & Filter Status */}
-      <div className="bg-white/80 backdrop-blur-md rounded-3xl border border-pink-100 shadow-card p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="bg-white/80 backdrop-blur-md rounded-3xl border border-amber-100 shadow-card p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="relative w-full md:w-96">
           <Search className="absolute right-4 top-3.5 w-4 h-4 text-gray-400" />
           <input
@@ -236,8 +302,8 @@ export function AdminCustomersPage() {
               key={customer.id}
               className={`rounded-3xl border transition-all duration-300 hover:scale-[1.01] hover:shadow-xl p-6 flex flex-col justify-between space-y-5 relative overflow-hidden backdrop-blur-sm ${
                 customer.isVip 
-                  ? 'border-amber-300 shadow-amber-100/60 bg-gradient-to-b from-amber-50/30 via-white to-pink-50/20' 
-                  : 'border-pink-100/60 shadow-card bg-gradient-to-b from-white to-pink-50/10'
+                  ? 'border-amber-300 shadow-amber-100/60 bg-gradient-to-b from-amber-50/40 via-white to-amber-50/20'
+                  : 'border-amber-100/70 shadow-card bg-gradient-to-b from-white to-amber-50/20'
               }`}
             >
               {/* شارة العميل المميز */}
@@ -249,7 +315,7 @@ export function AdminCustomersPage() {
               )}
 
               {/* Customer Header info */}
-              <div className="flex items-center gap-4 border-b border-pink-100/60 pb-4 pt-2">
+              <div className="flex items-center gap-4 border-b border-amber-100/70 pb-4 pt-2">
                 <div className="w-12 h-12 rounded-2xl bg-primary-100/70 text-primary-700 flex items-center justify-center font-extrabold text-lg flex-shrink-0 shadow-xs">
                   {(customer.full_name || customer.name || 'C').charAt(0).toUpperCase()}
                 </div>
@@ -265,7 +331,7 @@ export function AdminCustomersPage() {
               </div>
 
               {/* Customer Stats & History */}
-              <div className="grid grid-cols-2 gap-3 bg-pink-50/30 p-3.5 rounded-2xl border border-pink-100/50">
+              <div className="grid grid-cols-2 gap-3 bg-amber-50/40 p-3.5 rounded-2xl border border-amber-100/60">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-purple-100/70 text-purple-700 flex items-center justify-center font-bold shadow-xs">
                     <ShoppingBag className="w-4 h-4" />
@@ -304,7 +370,7 @@ export function AdminCustomersPage() {
               </div>
 
               {/* Registration / Status Footer */}
-              <div className="pt-3 border-t border-pink-100/60 flex items-center justify-between text-[11px] text-gray-400">
+              <div className="pt-3 border-t border-amber-100/70 flex items-center justify-between text-[11px] text-gray-400">
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-gray-400" />
                   تسجيل: {customer.created_at ? new Date(customer.created_at).toLocaleDateString('ar-EG') : 'غير متوفر'}
